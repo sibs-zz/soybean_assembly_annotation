@@ -27,6 +27,7 @@ Directory: `<workdir>/annot/<cultivar>_annotation_downstream/12_renamed/`
 | `*.renamed.high_confidence.transcripts.fa` | mRNA / transcripts |
 | `*.renamed.high_confidence.cds.fa` | CDS |
 | `*.renamed.high_confidence.genes.list` | One gene ID per line |
+| `*.renamed.repeat.gff3.gz` | Genome-wide TE/repeat GFF from EDTA + RepeatMasker. Same Chr01–Chr20 coordinates as the gene GFF; TE IDs (`TE_annot_*`) are **not** rewritten as `PREFIX_01G…` gene loci. |
 
 Do **not** report gene counts from:
 

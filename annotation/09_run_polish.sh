@@ -212,6 +212,8 @@ init_sample_paths() {
     GENE_ID_MAPPING="${RENAME_DIR}/${PREFIX}.gene_id_mapping.tsv"
     RENAMED_NUCLEAR_GFF="${RENAME_DIR}/${PREFIX}.renamed.nuclear.gff3"
     RENAMED_NUCLEAR_PROTEIN_FA="${RENAME_DIR}/${PREFIX}.renamed.nuclear.proteins.fa"
+    REPEAT_GFF="${SCRIPT_DIR}/${PREFIX}_TE/${PREFIX}_Chr.fa.out.gff3"
+    RENAMED_REPEAT_GFF="${RENAME_DIR}/${PREFIX}.renamed.repeat.gff3.gz"
 
     LOG="${OUTDIR}/00_logs/${PREFIX}.pipeline.log"
 }
@@ -1713,6 +1715,17 @@ if [[ "${RUN_GENE_RENAME}" -eq 1 && -s "${RENAMED_HC_GENE_LIST}" && -s "${RENAME
         --prefix "${PREFIX}"
 fi
 
+if [[ "${RUN_GENE_RENAME}" -eq 1 && -s "${REPEAT_GFF}" && -d "${RENAME_DIR}" ]]; then
+    echo
+    echo "============================================================"
+    echo "Step 12e. Repeat GFF (EDTA/RepeatMasker; genomic coords, TE IDs not remapped to gene loci)"
+    echo "============================================================"
+    gzip -c -n "${REPEAT_GFF}" > "${RENAMED_REPEAT_GFF}"
+    echo "[INFO] Repeat GFF: ${RENAMED_REPEAT_GFF}"
+elif [[ "${RUN_GENE_RENAME}" -eq 1 ]]; then
+    echo "[WARN] Repeat GFF missing, skip 12e: ${REPEAT_GFF:-unset}"
+fi
+
 
 ############################
 # 13. Final message
@@ -1807,6 +1820,7 @@ echo "   ${RENAME_DIR}/${PREFIX}.renamed.lineage_specific.annotated.gff3"
 echo "   ${RENAME_DIR}/${PREFIX}.renamed.lineage_specific.transcripts.fa"
 echo "   ${RENAME_DIR}/${PREFIX}.renamed.lineage_specific.cds.fa"
 echo "   ${RENAME_DIR}/${PREFIX}.renamed.lineage_specific.proteins.fa"
+echo "   ${RENAMED_REPEAT_GFF}  (repeat/TE; coords match Chr.fa, TE IDs unchanged)"
 echo
 fi
 echo "Log:"

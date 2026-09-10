@@ -140,6 +140,8 @@ $ROOT/rna_clean/     Atlas RNA-seq 双端
 - `*.renamed.high_confidence.cds.fa`
 - `*.renamed.high_confidence.genes.list`
 
+同一目录另有 `*.renamed.repeat.gff3.gz`（EDTA/RepeatMasker）。染色体坐标与基因 GFF 一致，TE ID **不改成** `PREFIX_01G…` 基因名。
+
 不要用全量 nuclear GFF（约 8 万位点）报基因数。`11_publication/` 若仍是旧过滤，也不要当最终 HC。
 
 特异集文件名为 `*.renamed.lineage_specific.*`（list / GFF / mRNA / CDS / 蛋白）。

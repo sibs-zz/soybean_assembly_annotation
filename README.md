@@ -172,13 +172,15 @@ Optional preprocess helpers: `preprocess/hifi_bam2fastq.sh`, `hic_fastp.sh`, `rn
 
 ## High-confidence annotation (paper gene set)
 
-Step 09 writes ZH13-style locus IDs (`KD35_01G000100.m1`) and three HC deliverables under `12_renamed/`:
+Step 09 writes ZH13-style locus IDs (`KD35_01G000100.m1`) and HC deliverables under `12_renamed/`:
 
 - `*.renamed.high_confidence.annotated.gff3`
 - `*.renamed.high_confidence.proteins.fa`
 - `*.renamed.high_confidence.transcripts.fa` (mRNA)
 - `*.renamed.high_confidence.cds.fa`
 - `*.renamed.high_confidence.genes.list`
+
+The same folder also gets `*.renamed.repeat.gff3.gz` (EDTA/RepeatMasker). Repeat features keep genomic coordinates on Chr01–Chr20; TE IDs are **not** rewritten as gene loci.
 
 Use **these files** for the main gene count in a paper. Do not report gene numbers from the full nuclear GFF (~80k loci) or from `11_publication/` if that folder still uses an older filter.
 
