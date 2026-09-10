@@ -1,0 +1,41 @@
+# Local path overrides (never commit lab-specific secrets or mounts)
+config/config.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+
+# Editor / OS
+.DS_Store
+*.swp
+*~
+
+# Runtime outputs that must not be uploaded
+*.fa
+*.fasta
+*.fq
+*.fastq
+*.fq.gz
+*.fastq.gz
+*.bam
+*.bai
+*.sam
+*.cram
+*.gfa
+*.hic
+*.cool
+*.mcool
+*.pairs
+*.pairs.gz
+*.dmnd
+*.sqlite
+*.db
+*.log
+*.out
+*.o
+*.e
+
+# Keep example / tiny text
+!annotation/evm.weights.txt

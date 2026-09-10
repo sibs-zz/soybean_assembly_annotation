@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+title: "Soybean T2T genome assembly and annotation pipeline"
+message: "If you use this pipeline, please cite the associated manuscript and this repository."
+type: software
+license: MIT
+repository-code: "https://github.com/sibs-zz/soybean_assembly_annotation"
+abstract: >-
+  Reproducible pipeline for telomere-to-telomere (T2T) assembly of soybean
+  (Glycine max) genomes from HiFi, ultra-long ONT and Hi-C reads, followed by
+  evidence-based gene annotation, high-confidence filtering and ZH13-style
+  locus renaming.
+keywords:
+  - soybean
+  - Glycine max
+  - T2T
+  - genome assembly
+  - gene annotation
+  - HiFi
+  - ONT
+  - Hi-C
