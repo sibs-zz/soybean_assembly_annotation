@@ -20,6 +20,8 @@ set -euo pipefail
 #   build_publication_annotation.py
 #   rename_gene_loci.py
 #   pack_structural_gff.py
+#   extract_lineage_specific.py
+#   extract_hc_sequences.py
 #
 # 用法：
 #   bash 09_run_polish.sh
@@ -204,6 +206,8 @@ init_sample_paths() {
     RENAMED_PROTEIN_FA="${RENAME_DIR}/${PREFIX}.renamed.proteins.fa"
     RENAMED_HC_GFF="${RENAME_DIR}/${PREFIX}.renamed.high_confidence.annotated.gff3"
     RENAMED_HC_PROTEIN_FA="${RENAME_DIR}/${PREFIX}.renamed.high_confidence.proteins.fa"
+    RENAMED_HC_TRANSCRIPT_FA="${RENAME_DIR}/${PREFIX}.renamed.high_confidence.transcripts.fa"
+    RENAMED_HC_CDS_FA="${RENAME_DIR}/${PREFIX}.renamed.high_confidence.cds.fa"
     RENAMED_HC_GENE_LIST="${RENAME_DIR}/${PREFIX}.renamed.high_confidence.genes.list"
     GENE_ID_MAPPING="${RENAME_DIR}/${PREFIX}.gene_id_mapping.tsv"
     RENAMED_NUCLEAR_GFF="${RENAME_DIR}/${PREFIX}.renamed.nuclear.gff3"
@@ -1699,6 +1703,16 @@ if [[ "${RUN_GENE_RENAME}" -eq 1 && -s "${RENAMED_SUMMARY}" && -s "${RENAMED_GFF
         --max-zh13 "${PUB_MIN_ZH13_PIDENT}"
 fi
 
+if [[ "${RUN_GENE_RENAME}" -eq 1 && -s "${RENAMED_HC_GENE_LIST}" && -s "${RENAMED_TRANSCRIPT_FA}" ]]; then
+    echo
+    echo "============================================================"
+    echo "Step 12d. High-confidence transcripts (mRNA) and CDS FASTA"
+    echo "============================================================"
+    python3 "${SCRIPT_DIR}/extract_hc_sequences.py" \
+        --dir "${RENAME_DIR}" \
+        --prefix "${PREFIX}"
+fi
+
 
 ############################
 # 13. Final message
@@ -1783,6 +1797,8 @@ echo "   ${RENAMED_CDS_FA}"
 echo "   ${RENAMED_PROTEIN_FA}"
 echo "   ${RENAMED_HC_GFF}"
 echo "   ${RENAMED_HC_PROTEIN_FA}"
+echo "   ${RENAMED_HC_TRANSCRIPT_FA}"
+echo "   ${RENAMED_HC_CDS_FA}"
 echo "   ${RENAMED_HC_GENE_LIST}"
 echo "   ${RENAMED_NUCLEAR_GFF}  (Chr01–20, protein >= ${PUB_MIN_AA} aa)"
 echo "   ${RENAMED_NUCLEAR_PROTEIN_FA}"

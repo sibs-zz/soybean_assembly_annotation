@@ -24,6 +24,8 @@ Directory: `<workdir>/annot/<cultivar>_annotation_downstream/12_renamed/`
 |------|-----|
 | `*.renamed.high_confidence.annotated.gff3` | Submit / browse; structural gene models |
 | `*.renamed.high_confidence.proteins.fa` | Protein set matching HC genes |
+| `*.renamed.high_confidence.transcripts.fa` | mRNA / transcripts |
+| `*.renamed.high_confidence.cds.fa` | CDS |
 | `*.renamed.high_confidence.genes.list` | One gene ID per line |
 
 Do **not** report gene counts from:
@@ -51,7 +53,7 @@ Do **not** report gene counts from:
 | `*.renamed.gene_functional_annotation.tsv` | Compact functional table |
 | `*.gene_id_mapping.tsv` | Old ID → ZH13-style ID |
 
-CDS/mRNA for the **HC** set can be extracted from the HC GFF with `gffread` if not written as separate FASTA files.
+CDS/mRNA for the **HC** set are written as `*.renamed.high_confidence.transcripts.fa` and `*.renamed.high_confidence.cds.fa`.
 
 ## Example counts (KD35 / N2L, this project)
 

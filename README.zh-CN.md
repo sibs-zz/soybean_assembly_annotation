@@ -136,6 +136,8 @@ $ROOT/rna_clean/     Atlas RNA-seq 双端
 
 - `*.renamed.high_confidence.annotated.gff3`
 - `*.renamed.high_confidence.proteins.fa`
+- `*.renamed.high_confidence.transcripts.fa`（mRNA）
+- `*.renamed.high_confidence.cds.fa`
 - `*.renamed.high_confidence.genes.list`
 
 不要用全量 nuclear GFF（约 8 万位点）报基因数。`11_publication/` 若仍是旧过滤，也不要当最终 HC。

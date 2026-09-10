@@ -176,6 +176,8 @@ Step 09 writes ZH13-style locus IDs (`KD35_01G000100.m1`) and three HC deliverab
 
 - `*.renamed.high_confidence.annotated.gff3`
 - `*.renamed.high_confidence.proteins.fa`
+- `*.renamed.high_confidence.transcripts.fa` (mRNA)
+- `*.renamed.high_confidence.cds.fa`
 - `*.renamed.high_confidence.genes.list`
 
 Use **these files** for the main gene count in a paper. Do not report gene numbers from the full nuclear GFF (~80k loci) or from `11_publication/` if that folder still uses an older filter.
