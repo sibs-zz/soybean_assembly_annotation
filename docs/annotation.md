@@ -17,7 +17,8 @@ Annotation is evidence-based (no Iso-Seq in the default KD35/N2L run). Protein h
 | 06 | `06_run_pasa_align.sh` | PASA SQLite align/assemble (**do not** pass `--trans_gtf`) |
 | 07 | `07_run_evm.sh` | miniprot (Viridiplantae) + EVM; weights in `evm.weights.txt` |
 | 08 | `08_run_pasa_update.sh` | PASA annot compare `-A -L --annots evm.gff3` (UTRs) |
-| 09 | `09_run_polish.sh` | Sequences, homologs, eggNOG, InterPro, TE overlap, Salmon, HC filter, ZH13-style rename, lineage-specific extract |
+| 09 | `09_run_polish.sh` | Sequences, homologs, eggNOG, InterPro, TE overlap, Salmon, confidence labels, ZH13-style rename, drop list |
+| 10 | `10_final_anno.sh` | From `12_renamed`: ORF drop, three-class final set, in-place repair of short high-confidence models, BUSCO |
 
 Shared settings: `annot_common.sh` (sourced by 04–08). Python helpers live in the same folder as the shell scripts.
 
@@ -38,24 +39,29 @@ Assigned per gene from expression (Salmon TPM) and functional hits (SwissProt / 
 - exactly one of expression or function → `medium_confidence`
 - neither → `low_confidence`
 
-## High-confidence (HC) vs lineage-specific
+## Final set (step 10)
 
-HC (main paper set), all required:
+`10_final_anno.sh` calls `curate_final_models.py`. It does not rerun steps 01–09. Input is an existing `12_renamed/` directory. Output is one GFF and one FASTA set in `13_final/`.
 
-1. `Chr01`–`Chr20`
-2. confidence ≥ medium
-3. TE overlap ratio ≤ 0.5
-4. best hit vs ZH13 v3 nuclear proteins identity ≥ 50
+Shared gates: `Chr01`–`Chr20`, confidence ≥ medium, TE overlap ≤ 0.5. The three classes are disjoint:
 
-Lineage-specific (supplement), all required:
+| Class | Extra rule |
+|-------|------------|
+| `high_confidence` | ZH13 v3 identity ≥ 50; expression not required |
+| `expressed_zh13_below_50` | Expression supported and ZH13 v3 identity < 50 (no hit counts as 0). Not rewritten from a full ZH13 protein. |
+| `homolog_unexpressed` | No expression, ZH13 v3 identity < 50, and at least one of ZH13 v2, ZH13 v3, Wm82 a2.v1, Wm82 gnm4, Wm82 gnm6 whose own highest-bitscore hit has identity ≥ 50, both coverages ≥ 50%, E-value ≤ 1e-5 |
 
-1. `Chr01`–`Chr20`
-2. confidence ≥ medium
-3. TE overlap ratio ≤ 0.5
-4. `expression_supported=yes`
-5. ZH13 v3 identity **< 50** (no hit counts as 0)
+Before the merge, ORF abnormalities are removed again. A non-multiple-of-3 CDS removes the gene. Missing ATG, an internal stop, or a missing terminal stop removes that transcript. Previously dropped gene IDs stay out. IDs are `PREFIX_chrG` + 6 digits, step 100, and are not renumbered.
 
-The two sets are disjoint. IDs are `PREFIX_chrG` + 6 digits, step 100 (e.g. `KD35_01G000100.m1`). Filtering does **not** re-number, so HC IDs may have gaps.
+Short high-confidence proteins (query coverage ≥ 50% and subject coverage < 50% against ZH13 v3) may be extended or merged from a same-locus miniprot alignment. The alignment must cover ≥ 80% of the ZH13 protein at identity ≥ 80%, with no frameshift and no in-frame stop. The replacement CDS must start with ATG, end with a stop, have length divisible by 3, and have no internal stop. Otherwise the original model is kept. A merge keeps the lowest locus ID; other IDs go to `*.final.id_map.tsv`.
+
+```bash
+bash 10_final_anno.sh
+SAMPLE=KD35 bash 10_final_anno.sh
+RUN_BUSCO_FINAL=0 bash 10_final_anno.sh
+```
+
+`SAMPLE` here is `KD35`, not `KD35_primary`. BUSCO uses the longest protein of each final gene (`embryophyta_odb10`, protein mode) and copies the summary into `13_final/`.
 
 ## EVM weights
 
@@ -85,4 +91,4 @@ PASA transcripts outrank protein and ab initio tracks.
 
 默认流程对标 ZH13 v3：短读 RNA + 绿色植物蛋白 + 五套大豆参考蛋白，不用 Iso-seq。01 EDTA 必须用容器；03 BRAKER3 需要 GeneMark-ETP 许可。04–08 共用 `annot_common.sh`。EVM 权重见上，PASA 转录本权重最高。
 
-09 步才做功能注释、置信度、HC 过滤和 ZH13 风格改名。论文主表用 HC 三件套；品种特异用 `lineage_specific` 一套。全量 nuclear GFF 仍保留未进 HC 的基因。
+09 步做功能注释、置信度、ZH13 风格改名和删除清单，结果留在 `12_renamed/`。10 步读取这一层，再做 ORF 删除、三类基因合并，并在原基因号上修补 high-confidence 短模型，写成 `13_final/` 的一套 GFF 和 FASTA。论文基因数用 `13_final`。`expressed_zh13_below_50` 不按 ZH13 全长蛋白改写。

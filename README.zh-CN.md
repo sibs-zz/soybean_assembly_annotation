@@ -80,7 +80,7 @@ soybean_assembly_annotation/
 ├── env/                           # conda 环境
 ├── docs/                          # 方法说明
 ├── assembly/                      # 组装 01–10
-├── annotation/                    # EDTA → BRAKER → EVM → polish
+├── annotation/                    # EDTA → BRAKER → EVM → polish → 最终注释
 └── preprocess/                    # 可选：HiFi / Hi-C / RNA 清洗
 ```
 
@@ -124,7 +124,7 @@ $ROOT/rna_clean/     Atlas RNA-seq 双端
 
 按编号顺序跑：先组装 01–07 得到 `*_Chr.fa`，再注释。组装 10 着丝粒需要 EDTA 的 TE GFF，应在注释 01 之后。
 
-单样本：`SAMPLE=N2L_primary THREADS=16 bash 09_run_polish.sh`。
+注释 09 的单样本写法是 `SAMPLE=N2L_primary THREADS=16 bash 09_run_polish.sh`。10 用品种前缀：`SAMPLE=KD35 bash 10_final_anno.sh`。不跑 BUSCO 时加 `RUN_BUSCO_FINAL=0`。
 
 分步说明：[docs/assembly.md](docs/assembly.md)、[docs/annotation.md](docs/annotation.md)、[docs/outputs.md](docs/outputs.md)。
 
@@ -132,19 +132,29 @@ $ROOT/rna_clean/     Atlas RNA-seq 双端
 
 ## 论文主注释用哪几个文件
 
-09 步会写成 ZH13 风格 ID（如 `KD35_01G000100.m1`）。**对外报基因数、投注释**用 `12_renamed/` 下：
+09 步把基因改成 ZH13 风格 ID（如 `KD35_01G000100.m1`），结果在 `12_renamed/`。这一层保留改名后的全量注释和删除清单，用来追溯，不作为投稿基因集。
 
-- `*.renamed.high_confidence.annotated.gff3`
-- `*.renamed.high_confidence.proteins.fa`
-- `*.renamed.high_confidence.transcripts.fa`（mRNA）
-- `*.renamed.high_confidence.cds.fa`
-- `*.renamed.high_confidence.genes.list`
+10 步（`10_final_anno.sh`，辅助脚本 `curate_final_models.py`）读取 `12_renamed`，在 `13_final/` 写成一套注释：
 
-同一目录另有 `*.renamed.repeat.gff3.gz`（EDTA/RepeatMasker）。染色体坐标与基因 GFF 一致，TE ID **不改成** `PREFIX_01G…` 基因名。
+1. 再查一遍 ORF。CDS 长度不能被 3 整除就删除整个基因；没有 CDS、没有 ATG、有内部终止或没有终止密码子就删除该转录本。09 步已经删除的基因不会回来。位点编号不重排。
+2. 保留三类互不重叠的核基因（Chr01–Chr20，置信度至少 medium，转座元件重叠不超过 0.5）：
+   - `high_confidence`：相对 ZH13 v3 的相似度 ≥ 50，不要求表达
+   - `expressed_zh13_below_50`：有表达，相对 ZH13 v3 的相似度 < 50
+   - `homolog_unexpressed`：没有表达，相对 ZH13 v3 的相似度 < 50，并且五套大豆参考蛋白里至少一套的最高 bitscore 命中同时满足相似度 ≥ 50、查询覆盖 ≥ 50%、参考覆盖 ≥ 50%、E-value ≤ 1e-5
+3. 只修补 high-confidence 短模型。同位点 miniprot 能恢复至少 80% 的 ZH13 蛋白、没有移码和框内终止时，才提出新 CDS。新 CDS 必须有 ATG、有终止密码子、长度能被 3 整除、没有内部终止。任一条件不满足就保留原模型。`expressed_zh13_below_50` 不用 ZH13 全长蛋白改写。
 
-不要用全量 nuclear GFF（约 8 万位点）报基因数。`11_publication/` 若仍是旧过滤，也不要当最终 HC。
+**对外报基因数、投注释**用 `13_final/`：
 
-特异集文件名为 `*.renamed.lineage_specific.*`（list / GFF / mRNA / CDS / 蛋白）。
+- `*.final.gff3`
+- `*.final.transcripts.fa`
+- `*.final.cds.fa`
+- `*.final.proteins.fa`
+- `*.final.genes.list`
+- `*.final.gene_class.tsv`
+
+`*.final.corrections.tsv` 记录每个被审查的短模型；改过的行同时保存旧蛋白和新蛋白。`*.final.id_map.tsv` 只记录发生替换的基因号或转录本号。筛选规则在 `*.final.criteria.txt`。每个基因取最长蛋白做的 BUSCO 摘要在 `*.final.busco.short_summary.txt`。
+
+重复序列仍在 `12_renamed/*.renamed.repeat.gff3.gz`。TE ID 不改成基因号。不要用 `12_renamed` 的全量 GFF 或 `11_publication/` 报基因数。
 
 ---
 

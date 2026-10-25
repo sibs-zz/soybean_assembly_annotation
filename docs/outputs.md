@@ -2,7 +2,7 @@
 
 中文见文末。
 
-After assembly 07 and annotation 09, the files that belong in a manuscript / database submission are:
+After assembly 07 and annotation 10, the files that belong in a manuscript / database submission are:
 
 ## Genome
 
@@ -13,63 +13,56 @@ After assembly 07 and annotation 09, the files that belong in a manuscript / dat
 | `09_run_hic_heatmap/` | Hi-C cooler + heatmap PDF/PNG |
 | `10_run_centro/<sample>/` | Centromere calls |
 
-## Gene annotation (use `12_renamed/`)
+## Gene annotation (use `13_final/`)
 
-Directory: `<workdir>/annot/<cultivar>_annotation_downstream/12_renamed/`  
-(or the equivalent path if you keep annotation outputs under `ROOT`).
+Directory: `<workdir>/annot/<cultivar>_annotation_downstream/13_final/`  
+(or `batch2/annot/<cultivar>_annotation_downstream/13_final/`).
 
-### Main paper set (HC)
+`12_renamed/` is the step-09 renamed annotation and drop list. Step 10 reads it and writes the files below. Repeat features stay in `12_renamed/*.renamed.repeat.gff3.gz`; TE IDs are not gene loci.
+
+### Submitted set
 
 | File | Use |
 |------|-----|
-| `*.renamed.high_confidence.annotated.gff3` | Submit / browse; structural gene models |
-| `*.renamed.high_confidence.proteins.fa` | Protein set matching HC genes |
-| `*.renamed.high_confidence.transcripts.fa` | mRNA / transcripts |
-| `*.renamed.high_confidence.cds.fa` | CDS |
-| `*.renamed.high_confidence.genes.list` | One gene ID per line |
-| `*.renamed.repeat.gff3.gz` | Genome-wide TE/repeat GFF from EDTA + RepeatMasker. Same Chr01–Chr20 coordinates as the gene GFF; TE IDs (`TE_annot_*`) are **not** rewritten as `PREFIX_01G…` gene loci. |
+| `*.final.gff3` | One structural gene set |
+| `*.final.transcripts.fa` | mRNA |
+| `*.final.cds.fa` | CDS, including the terminal stop |
+| `*.final.proteins.fa` | Proteins, without the terminal stop |
+| `*.final.genes.list` | One gene ID per line, same order as the GFF |
+| `*.final.gene_class.tsv` | `high_confidence`, `expressed_zh13_below_50`, or `homolog_unexpressed` |
+| `*.final.criteria.txt` | Filter and repair rules used for this run |
+| `*.final.corrections.tsv` | Short-model review; old and new protein when a model was overwritten |
+| `*.final.id_map.tsv` | Old gene or transcript ID → kept ID |
+| `*.final.orf_dropped.tsv` | ORF models removed while building this set |
+| `*.final.busco.short_summary.txt` | BUSCO protein mode, longest protein per gene, embryophyta_odb10 |
+| `*.final.busco.full_table.tsv` | One row per BUSCO gene |
+| `*.final.busco.missing_busco_list.tsv` | Missing BUSCO IDs |
 
 Do **not** report gene counts from:
 
-- full `*.renamed.gff3` (all scaffolds, all loci)
-- `*.renamed.nuclear.gff3` (Chr01–20, protein ≥ 29 aa, **no** HC quality cut)
-- `11_publication/*.high_confidence.*` if generated with an older filter (all chromosomes, no ZH13 identity gate)
+- `12_renamed/*.renamed.gff3` (all scaffolds, all loci)
+- `12_renamed/*.renamed.nuclear.gff3`
+- `12_renamed/*.renamed.high_confidence.*` (step-09 subset, before the step-10 merge and repair)
+- `11_publication/` if it still uses an older filter
 
-### Supplement: lineage-specific
+Functional tables from step 09 remain in `12_renamed/*.renamed.annotation.summary.tsv` and `*.gene_id_mapping.tsv`. They describe the renamed models, not the coordinates changed in step 10.
 
-| File | Use |
-|------|-----|
-| `*.renamed.lineage_specific.genes.list` | Gene IDs |
-| `*.renamed.lineage_specific.annotated.gff3` | GFF with Name/product |
-| `*.renamed.lineage_specific.transcripts.fa` | mRNA |
-| `*.renamed.lineage_specific.cds.fa` | CDS |
-| `*.renamed.lineage_specific.proteins.fa` | Proteins |
-| `*.renamed.lineage_specific.README.txt` | Filter text and counts |
+## Example counts (this project, after step 10)
 
-### Tables
+These numbers document one run. They are not a specification. BUSCO is the longest protein of each final gene.
 
-| File | Use |
-|------|-----|
-| `*.renamed.annotation.summary.tsv` | Per-gene homologs, eggNOG, InterPro, TE, TPM, confidence |
-| `*.renamed.gene_functional_annotation.tsv` | Compact functional table |
-| `*.gene_id_mapping.tsv` | Old ID → ZH13-style ID |
-
-CDS/mRNA for the **HC** set are written as `*.renamed.high_confidence.transcripts.fa` and `*.renamed.high_confidence.cds.fa`.
-
-## Example counts (KD35 / N2L, this project)
-
-These numbers document one successful run of the HC definition above; they are not a specification.
-
-| Set | KD35 | N2L |
-|-----|------|-----|
-| HC genes | 59,284 | 56,547 |
-| Lineage-specific (expressed, ZH13 < 50) | 1,916 | 1,758 |
-| Protein BUSCO embryophyta_odb10 (all predicted proteins) | C:99.3% | C:99.0% |
-
-Published soybean nuclear gene counts typically fall near 5.4–6.0 × 10⁴; ZH13 v3 nuclear is 53,401. HC is intended to sit in that range.
+| Cultivar | Genes | high_confidence | expressed_zh13_below_50 | homolog_unexpressed | BUSCO complete |
+|----------|------:|----------------:|------------------------:|--------------------:|----------------|
+| KD35 | 62,643 | 58,908 | 1,912 | 1,823 | C:97.2% |
+| N2L | 59,531 | 56,233 | 1,756 | 1,542 | C:96.9% |
+| BZ | 60,951 | 57,257 | 2,000 | 1,694 | C:96.8% |
+| DY11 | 59,987 | 56,384 | 1,944 | 1,659 | C:97.2% |
+| TH2 | 60,495 | 56,902 | 1,966 | 1,627 | C:97.5% |
+| TZX1998 | 60,191 | 56,745 | 1,890 | 1,556 | C:96.6% |
+| TZX253 | 62,615 | 59,059 | 1,848 | 1,708 | C:96.4% |
 
 ---
 
 ## 发表用文件（中文）
 
-基因组用 07 的 `*_Chr.fa`。基因数和投稿注释只用 `12_renamed` 的 **HC 三件套**。全量 / nuclear GFF 是备份和浏览器轨道，不是论文基因数。品种特异另附 `lineage_specific`。功能表用 `*.renamed.annotation.summary.tsv`。
+基因组用 07 的 `*_Chr.fa`。基因数和投稿注释用 `13_final` 的一套 GFF 与 FASTA。`12_renamed` 是改名和删除记录，其中的 high-confidence 子集是 10 步之前的中间结果。功能表仍在 `12_renamed/*.renamed.annotation.summary.tsv`。

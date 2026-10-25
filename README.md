@@ -80,7 +80,7 @@ soybean_assembly_annotation/
 ├── env/                           # conda environments
 ├── docs/                          # methods notes
 ├── assembly/                      # 01–10 T2T scripts + Python helpers
-├── annotation/                    # EDTA → BRAKER → EVM → polish
+├── annotation/                    # EDTA → BRAKER → EVM → polish → final set
 └── preprocess/                    # optional HiFi / Hi-C / RNA cleaning
 ```
 
@@ -148,9 +148,10 @@ SAMPLE=KD35_primary THREADS=16 bash 06_run_pasa_align.sh
 SAMPLE=KD35_primary THREADS=16 bash 07_run_evm.sh
 SAMPLE=KD35_primary THREADS=16 bash 08_run_pasa_update.sh
 SAMPLE=KD35_primary THREADS=16 bash 09_run_polish.sh
+bash 10_final_anno.sh
 ```
 
-Single-sample override: `SAMPLE=N2L_primary THREADS=16 bash 09_run_polish.sh`.
+Single-sample override: `SAMPLE=N2L_primary THREADS=16 bash 09_run_polish.sh`. Step 10 uses the cultivar prefix, not the `_primary` assembly name: `SAMPLE=KD35 bash 10_final_anno.sh`. Skip its BUSCO with `RUN_BUSCO_FINAL=0`.
 
 Details: [docs/assembly.md](docs/assembly.md), [docs/annotation.md](docs/annotation.md), [docs/outputs.md](docs/outputs.md).
 
@@ -170,21 +171,31 @@ Optional preprocess helpers: `preprocess/hifi_bam2fastq.sh`, `hic_fastp.sh`, `rn
 
 ---
 
-## High-confidence annotation (paper gene set)
+## Final annotation (paper gene set)
 
-Step 09 writes ZH13-style locus IDs (`KD35_01G000100.m1`) and HC deliverables under `12_renamed/`:
+Step 09 writes ZH13-style locus IDs (`KD35_01G000100.m1`) under `12_renamed/`. That folder is the traceable renamed set, including the drop list. It is not the submitted gene set.
 
-- `*.renamed.high_confidence.annotated.gff3`
-- `*.renamed.high_confidence.proteins.fa`
-- `*.renamed.high_confidence.transcripts.fa` (mRNA)
-- `*.renamed.high_confidence.cds.fa`
-- `*.renamed.high_confidence.genes.list`
+Step 10 (`10_final_anno.sh`, helper `curate_final_models.py`) reads `12_renamed` and writes one gene set to `13_final/`:
 
-The same folder also gets `*.renamed.repeat.gff3.gz` (EDTA/RepeatMasker). Repeat features keep genomic coordinates on Chr01–Chr20; TE IDs are **not** rewritten as gene loci.
+1. Drop an abnormal ORF again. A CDS whose length is not divisible by 3 removes the whole gene. A transcript with no CDS, no ATG, an internal stop, or no terminal stop is removed. Gene IDs already on the step-09 drop list cannot return. Locus IDs are not renumbered.
+2. Keep three disjoint nuclear classes (Chr01–Chr20, confidence at least medium, TE overlap ≤ 0.5):
+   - `high_confidence`: ZH13 v3 identity ≥ 50; expression not required
+   - `expressed_zh13_below_50`: expression supported and ZH13 v3 identity < 50
+   - `homolog_unexpressed`: no expression, ZH13 v3 identity < 50, and at least one soybean reference whose own best DIAMOND hit has identity ≥ 50, query coverage ≥ 50%, subject coverage ≥ 50%, and E-value ≤ 1e-5
+3. Revise short high-confidence models in place when a same-locus miniprot alignment recovers at least 80% of the ZH13 protein without a frameshift or in-frame stop. The new CDS must start with ATG, end with a stop, have a length divisible by 3, and contain no internal stop. A model that fails any of those checks is left unchanged. `expressed_zh13_below_50` is not rewritten from a ZH13 protein.
 
-Use **these files** for the main gene count in a paper. Do not report gene numbers from the full nuclear GFF (~80k loci) or from `11_publication/` if that folder still uses an older filter.
+Use these `13_final` files for the gene count and for submission:
 
-Lineage-specific companion files (`*.renamed.lineage_specific.*`) contain nuclear genes that pass medium confidence, TE ≤ 0.5 and expression, but have ZH13 v3 protein identity < 50% (including no hit).
+- `*.final.gff3`
+- `*.final.transcripts.fa`
+- `*.final.cds.fa`
+- `*.final.proteins.fa`
+- `*.final.genes.list`
+- `*.final.gene_class.tsv`
+
+`*.final.corrections.tsv` stores every reviewed short model, including the old and new protein when a model was overwritten. `*.final.id_map.tsv` stores gene or transcript IDs that changed. `*.final.criteria.txt` states the filters. BUSCO protein mode on the longest protein per gene is copied to `*.final.busco.short_summary.txt`.
+
+Repeat annotation stays in `12_renamed/*.renamed.repeat.gff3.gz`. TE IDs are not rewritten as gene loci. Do not report gene numbers from the full `12_renamed` GFF or from `11_publication/`.
 
 ---
 
