@@ -41,7 +41,8 @@ flowchart TD
     N06["06 PASA align"]
     N07["07 EVM"]
     N08["08 PASA UTR update"]
-    N09["09 Functional polish + HC + rename"]
+    N09["09 Functional annotation + rename"]
+    N10["10 Final set + short-model repair"]
   end
 
   HiFi --> A01
@@ -53,20 +54,19 @@ flowchart TD
   N01 --> A10
   A07 --> N01 --> N02 --> N03
   RNA --> N02
-  N02 --> N04 --> N05 --> N06 --> N07 --> N08 --> N09
+  N02 --> N04 --> N05 --> N06 --> N07 --> N08 --> N09 --> N10
   N03 --> N07
 ```
 
-**Publication gene set (high-confidence, HC)** after step 09:
+**Publication gene set** is `13_final/` after step 10, not the step-09 high-confidence subset. Three disjoint classes share Chr01–Chr20, confidence ≥ medium and TE overlap ≤ 0.5:
 
-| Filter | Threshold |
-|--------|-----------|
-| Chromosomes | Chr01–Chr20 only |
-| Confidence | ≥ medium |
-| TE overlap | ≤ 0.5 |
-| vs ZH13 v3 protein identity | ≥ 50% |
+| Class | Extra rule |
+|-------|------------|
+| `high_confidence` | ZH13 v3 identity ≥ 50%; expression not required |
+| `expressed_zh13_below_50` | Expressed, ZH13 v3 identity < 50%; not rewritten from a full ZH13 protein |
+| `homolog_unexpressed` | Unexpressed, ZH13 v3 identity < 50%, plus a best soybean-proteome hit at ≥ 50% identity and ≥ 50% coverage both ways |
 
-A disjoint **lineage-specific** set (expressed, TE-clean, ZH13 identity < 50%) is written for supplements and cultivar-specific analyses. Full nuclear GFF is retained; those loci are not deleted, only excluded from the HC count.
+Step 10 also repairs short high-confidence models in place when the new CDS is a complete ORF. Locus IDs are not renumbered. `12_renamed/` keeps the renamed models and the drop list.
 
 ---
 
