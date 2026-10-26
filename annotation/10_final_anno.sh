@@ -27,6 +27,15 @@
 # overwritten gene are stored in PREFIX.final.corrections.tsv, and any ID change
 # is stored in PREFIX.final.id_map.tsv. expressed_zh13_below_50 is not revised.
 #
+# resolve_final_redundancy.py then edits that same 13_final directory:
+#   - merge gene IDs that share the same CDS and protein, keeping the ID with
+#     the UTR transcripts
+#   - restore an extension when two new same-strand CDS overlap by >= 200 bp
+#     and their original CDS did not
+#   - drop an unexpressed same-strand fragment whose CDS and protein sit inside
+#     a longer gene of the same ZH13 locus
+# Opposite-strand overlaps are left in place.
+#
 # Usage:
 #   bash 10_final_anno.sh
 #   SAMPLE=KD35 bash 10_final_anno.sh
@@ -689,6 +698,10 @@ PY
         --zh13-fasta "$ZH13_FASTA" \
         --miniprot "$MINIPROT" \
         --threads "$CURATE_THREADS"
+    log "resolve redundant models in 13_final: ${prefix}"
+    python3 "${SCRIPT_DIR}/resolve_final_redundancy.py" \
+        --downstream "$down" \
+        --prefix "$prefix"
     if [[ "$RUN_BUSCO_FINAL" -eq 1 ]]; then
         run_final_busco "$down" "$prefix"
     fi

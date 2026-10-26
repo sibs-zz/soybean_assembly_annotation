@@ -175,14 +175,15 @@ Optional preprocess helpers: `preprocess/hifi_bam2fastq.sh`, `hic_fastp.sh`, `rn
 
 Step 09 writes ZH13-style locus IDs (`KD35_01G000100.m1`) under `12_renamed/`. That folder is the traceable renamed set, including the drop list. It is not the submitted gene set.
 
-Step 10 (`10_final_anno.sh`, helper `curate_final_models.py`) reads `12_renamed` and writes one gene set to `13_final/`:
+Step 10 (`10_final_anno.sh`, helpers `curate_final_models.py` and `resolve_final_redundancy.py`) reads `12_renamed` and writes one gene set to `13_final/`:
 
 1. Drop an abnormal ORF again. A CDS whose length is not divisible by 3 removes the whole gene. A transcript with no CDS, no ATG, an internal stop, or no terminal stop is removed. Gene IDs already on the step-09 drop list cannot return. Locus IDs are not renumbered.
 2. Keep three disjoint nuclear classes (Chr01–Chr20, confidence at least medium, TE overlap ≤ 0.5):
    - `high_confidence`: ZH13 v3 identity ≥ 50; expression not required
    - `expressed_zh13_below_50`: expression supported and ZH13 v3 identity < 50
    - `homolog_unexpressed`: no expression, ZH13 v3 identity < 50, and at least one soybean reference whose own best DIAMOND hit has identity ≥ 50, query coverage ≥ 50%, subject coverage ≥ 50%, and E-value ≤ 1e-5
-3. Revise short high-confidence models in place when a same-locus miniprot alignment recovers at least 80% of the ZH13 protein without a frameshift or in-frame stop. The new CDS must start with ATG, end with a stop, have a length divisible by 3, and contain no internal stop. A model that fails any of those checks is left unchanged. `expressed_zh13_below_50` is not rewritten from a ZH13 protein.
+3. Revise short high-confidence models in place when a same-locus miniprot alignment recovers at least 80% of the ZH13 protein without a frameshift or in-frame stop. The new CDS must start with ATG, end with a stop, have a length divisible by 3, and contain no internal stop. A model that fails any of those checks is left unchanged. Two new same-strand CDS that overlap by at least 200 bp are both left unchanged. `expressed_zh13_below_50` is not rewritten from a ZH13 protein.
+4. On that same `13_final` directory, merge gene IDs that share one CDS and one protein, keep the ID with the UTR transcripts, restore an extension whose new CDS overlaps another extension, and drop an unexpressed same-strand fragment whose protein is a continuous piece of a longer gene at the same ZH13 locus. Opposite-strand overlaps stay.
 
 Use these `13_final` files for the gene count and for submission:
 

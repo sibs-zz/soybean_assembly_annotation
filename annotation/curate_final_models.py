@@ -762,6 +762,34 @@ def main():
                 if gid != kept:
                     decisions[gid] = ("合并删除", kept, rec["id"], "同一条miniprot比对")
 
+    # Each extension is checked against the original CDS of other genes. Two
+    # extensions accepted in the same pass can still overlap each other.
+    overlap_reject = set()
+    applied_ids = list(applied)
+    for left_i, left_id in enumerate(applied_ids):
+        left = applied[left_id]
+        left_cds = merge_intervals(
+            [(start, end) for start, end, _phase, _strand in left["rec"]["cds"]]
+        )
+        for right_id in applied_ids[left_i + 1:]:
+            right = applied[right_id]
+            if left["rec"]["chrom"] != right["rec"]["chrom"]:
+                continue
+            if left["rec"]["strand"] != right["rec"]["strand"]:
+                continue
+            right_cds = merge_intervals(
+                [(start, end) for start, end, _phase, _strand in right["rec"]["cds"]]
+            )
+            if intersect_len(left_cds, right_cds) >= 200:
+                overlap_reject.add(left_id)
+                overlap_reject.add(right_id)
+    for gid in overlap_reject:
+        edit = applied.pop(gid)
+        for member in edit["members"]:
+            decisions[member] = (
+                "保持原模型", member, edit["rec"]["id"], "延长后的编码区相互重叠",
+            )
+
     for row in decisions.values():
         reason_counts[row[0] if row[0] != "保持原模型" else row[3]] += 1
 
@@ -929,6 +957,7 @@ def main():
             "不在同一条比对上的保持原模型。\n"
             "新 CDS 必须同时满足：有 ATG、有终止密码子、长度能被 3 整除、没有内部终止、不含非 ACGT。"
             "新蛋白没有变长，或新编码区与仍保留的其他基因重叠达到 200 bp，则不改该基因。\n"
+            "同一次修订中，两个新 CDS 在同链上重叠达到 200 bp 时，这两个延长都不写入。\n"
             "已在 12_renamed 删除清单中的基因不会回到注释里。位点编号不重排。\n"
             f"本轮延长 {n_extend} 个基因，合并保留 {n_merge} 个基因，"
             f"合并删除 {n_removed} 个基因。修订后基因数 {len(final_genes)}。\n"

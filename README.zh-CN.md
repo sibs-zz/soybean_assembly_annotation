@@ -134,14 +134,15 @@ $ROOT/rna_clean/     Atlas RNA-seq 双端
 
 09 步把基因改成 ZH13 风格 ID（如 `KD35_01G000100.m1`），结果在 `12_renamed/`。这一层保留改名后的全量注释和删除清单，用来追溯，不作为投稿基因集。
 
-10 步（`10_final_anno.sh`，辅助脚本 `curate_final_models.py`）读取 `12_renamed`，在 `13_final/` 写成一套注释：
+10 步（`10_final_anno.sh`，辅助脚本 `curate_final_models.py` 和 `resolve_final_redundancy.py`）读取 `12_renamed`，在 `13_final/` 写成一套注释：
 
 1. 再查一遍 ORF。CDS 长度不能被 3 整除就删除整个基因；没有 CDS、没有 ATG、有内部终止或没有终止密码子就删除该转录本。09 步已经删除的基因不会回来。位点编号不重排。
 2. 保留三类互不重叠的核基因（Chr01–Chr20，置信度至少 medium，转座元件重叠不超过 0.5）：
    - `high_confidence`：相对 ZH13 v3 的相似度 ≥ 50，不要求表达
    - `expressed_zh13_below_50`：有表达，相对 ZH13 v3 的相似度 < 50
    - `homolog_unexpressed`：没有表达，相对 ZH13 v3 的相似度 < 50，并且五套大豆参考蛋白里至少一套的最高 bitscore 命中同时满足相似度 ≥ 50、查询覆盖 ≥ 50%、参考覆盖 ≥ 50%、E-value ≤ 1e-5
-3. 只修补 high-confidence 短模型。同位点 miniprot 能恢复至少 80% 的 ZH13 蛋白、没有移码和框内终止时，才提出新 CDS。新 CDS 必须有 ATG、有终止密码子、长度能被 3 整除、没有内部终止。任一条件不满足就保留原模型。`expressed_zh13_below_50` 不用 ZH13 全长蛋白改写。
+3. 只修补 high-confidence 短模型。同位点 miniprot 能恢复至少 80% 的 ZH13 蛋白、没有移码和框内终止时，才提出新 CDS。新 CDS 必须有 ATG、有终止密码子、长度能被 3 整除、没有内部终止。任一条件不满足就保留原模型。同一次修订里两个新 CDS 在同链重叠达到 200 bp 时，这两个延长都不写入。`expressed_zh13_below_50` 不用 ZH13 全长蛋白改写。
+4. 仍在这一套 `13_final` 里收尾：CDS 和蛋白完全相同的重复基因号合并，保留带 UTR 转录本的基因号；延长后才发生同链 CDS 重叠的模型恢复原 CDS；没有表达、短 CDS 和短蛋白都落在同一 ZH13 基因的长模型里的同链碎片从主注释去掉。反义链重叠不删。
 
 **对外报基因数、投注释**用 `13_final/`：
 
