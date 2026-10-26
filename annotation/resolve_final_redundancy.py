@@ -333,6 +333,51 @@ def resolve(downstream, prefix, dry_run):
                 structure_score(removed)[0],
             ))
 
+    def transcript_cds_keys(gene_id):
+        keys = set()
+        for transcript in models[gene_id]["tx"].values():
+            if transcript["cds"]:
+                keys.add(tuple(sorted(transcript["cds"])))
+        return keys
+
+    by_strand_models = defaultdict(list)
+    for gene_id, model in models.items():
+        if gene_id in drop_merge:
+            continue
+        gene = model["gene"]
+        by_strand_models[(gene["chrom"], gene["strand"])].append(gene_id)
+    for group in by_strand_models.values():
+        keys = {gene_id: transcript_cds_keys(gene_id) for gene_id in group}
+        for removed in group:
+            if removed in drop_merge or not keys[removed]:
+                continue
+            zh13 = zh13_of(removed)
+            if zh13 == "NA":
+                continue
+            candidates = []
+            for kept in group:
+                if kept == removed or kept in drop_merge or zh13_of(kept) != zh13:
+                    continue
+                if not keys[removed] < keys[kept]:
+                    continue
+                if overlap_len(cds_intervals(removed), cds_intervals(kept)) <= 0:
+                    continue
+                candidates.append(kept)
+            if not candidates:
+                continue
+            kept = max(candidates, key=lambda gene_id: (len(keys[gene_id]), structure_score(gene_id)))
+            drop_merge[removed] = kept
+            gene = models[removed]["gene"]
+            merge_rows.append((
+                removed, kept, gene["chrom"], gene["strand"], gene["start"], gene["end"],
+                interval_len(cds_intervals(removed)),
+                max(len(seq) for seq in sequences_for(removed, prot_fa)),
+                zh13,
+                "yes" if expressed(removed) else "no",
+                structure_score(kept)[0],
+                structure_score(removed)[0],
+            ))
+
     renamed_header, renamed_blocks = load_gff_blocks(os.path.join(renamed, f"{prefix}.renamed.gff3"))
     renamed_models = {}
     for gene_id, lines in renamed_blocks:
@@ -619,6 +664,7 @@ def resolve(downstream, prefix, dry_run):
     criteria += (
         f"\n{STAMP}\n"
         "同链且 CDS 序列相同、蛋白序列相同的重复基因号已合并，保留 UTR 转录本更多的基因号。"
+        "同链、同一 ZH13 基因，且一个基因的每条 CDS 坐标都与另一个基因已有转录本一致时，删除多余基因号，不把它加成异构体。"
         f"本轮合并删除 {len(drop_merge)} 个基因。\n"
         "延长后新 CDS 在同链相互重叠达到 200 bp、而原始 CDS 重叠不足 200 bp 的模型已恢复为 12_renamed 的原始 CDS。"
         f"本轮撤销 {len(revert)} 个基因。\n"
