@@ -42,7 +42,7 @@ flowchart TD
     N07["07 EVM"]
     N08["08 PASA UTR 更新"]
     N09["09 功能注释 + 改名"]
-    N10["10 最终注释 + 短模型修补"]
+    N10["10 最终注释：修补、去冗余、反义筛选、BUSCO"]
   end
 
   HiFi --> A01
@@ -66,7 +66,7 @@ flowchart TD
 | `expressed_zh13_below_50` | 有表达，相对 ZH13 v3 的相似度 < 50%；不用 ZH13 全长蛋白改写 |
 | `homolog_unexpressed` | 没有表达，相对 ZH13 v3 的相似度 < 50%，并且至少一套大豆参考蛋白的最高 bitscore 命中达到相似度 ≥ 50%、双向覆盖 ≥ 50% |
 
-10 步还会在原基因号上修补 high-confidence 短模型，新 CDS 必须是完整 ORF。位点编号不重排。`12_renamed/` 保留改名后的模型和删除清单。
+10 步会修补 high-confidence 短模型，去掉同链重复和碎片，反义 CDS 重叠只保留两侧都有可靠同源的基因对，最后做蛋白 BUSCO。位点编号不重排。`12_renamed/` 保留改名后的模型和删除清单。
 
 ---
 

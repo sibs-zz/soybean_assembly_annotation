@@ -42,7 +42,7 @@ flowchart TD
     N07["07 EVM"]
     N08["08 PASA UTR update"]
     N09["09 Functional annotation + rename"]
-    N10["10 Final set + short-model repair"]
+    N10["10 Final set: repair, redundancy, antisense, BUSCO"]
   end
 
   HiFi --> A01
@@ -66,7 +66,7 @@ flowchart TD
 | `expressed_zh13_below_50` | Expressed, ZH13 v3 identity < 50%; not rewritten from a full ZH13 protein |
 | `homolog_unexpressed` | Unexpressed, ZH13 v3 identity < 50%, plus a best soybean-proteome hit at ≥ 50% identity and ≥ 50% coverage both ways |
 
-Step 10 also repairs short high-confidence models in place when the new CDS is a complete ORF. Locus IDs are not renumbered. `12_renamed/` keeps the renamed models and the drop list.
+Step 10 repairs short high-confidence models, removes same-strand duplicates and fragments, keeps an antisense CDS overlap only when both genes have reliable homology, then runs protein BUSCO. Locus IDs are not renumbered. `12_renamed/` keeps the renamed models and the drop list.
 
 ---
 
