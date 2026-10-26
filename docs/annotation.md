@@ -18,7 +18,7 @@ Annotation is evidence-based (no Iso-Seq in the default KD35/N2L run). Protein h
 | 07 | `07_run_evm.sh` | miniprot (Viridiplantae) + EVM; weights in `evm.weights.txt` |
 | 08 | `08_run_pasa_update.sh` | PASA annot compare `-A -L --annots evm.gff3` (UTRs) |
 | 09 | `09_run_polish.sh` | Sequences, homologs, eggNOG, InterPro, TE overlap, Salmon, confidence labels, ZH13-style rename, drop list |
-| 10 | `10_final_anno.sh` | From `12_renamed`: ORF drop, three-class final set, short-model repair, same-strand duplicate and fragment cleanup, BUSCO |
+| 10 | `10_final_anno.sh` | From `12_renamed`: ORF drop, three-class final set, short-model repair, same-strand cleanup, antisense filter, BUSCO |
 
 Shared settings: `annot_common.sh` (sourced by 04–08). Python helpers live in the same folder as the shell scripts.
 
@@ -41,7 +41,7 @@ Assigned per gene from expression (Salmon TPM) and functional hits (SwissProt / 
 
 ## Final set (step 10)
 
-`10_final_anno.sh` calls `curate_final_models.py`, then `resolve_final_redundancy.py`. It does not rerun steps 01–09. Input is an existing `12_renamed/` directory. Output is one GFF and one FASTA set in `13_final/`.
+`10_final_anno.sh` calls `curate_final_models.py`, `resolve_final_redundancy.py`, then `antisense_qc.py`. It does not rerun steps 01–09. Input is an existing `12_renamed/` directory. Output is one GFF and one FASTA set in `13_final/`.
 
 Shared gates: `Chr01`–`Chr20`, confidence ≥ medium, TE overlap ≤ 0.5. The three classes are disjoint:
 
@@ -55,7 +55,9 @@ Before the merge, ORF abnormalities are removed again. A non-multiple-of-3 CDS r
 
 Short high-confidence proteins (query coverage ≥ 50% and subject coverage < 50% against ZH13 v3) may be extended or merged from a same-locus miniprot alignment. The alignment must cover ≥ 80% of the ZH13 protein at identity ≥ 80%, with no frameshift and no in-frame stop. The replacement CDS must start with ATG, end with a stop, have length divisible by 3, and have no internal stop. Otherwise the original model is kept. Two extensions whose new same-strand CDS overlap by ≥ 200 bp are both rejected. A merge keeps the lowest locus ID; other IDs go to `*.final.id_map.tsv`.
 
-`resolve_final_redundancy.py` then edits that same directory. Identical CDS and protein sequences on one strand are collapsed to the gene ID that carries the UTR transcripts. An extension that created a same-strand CDS overlap of ≥ 200 bp is restored from `12_renamed`. An unexpressed fragment is removed when its CDS and protein sit inside a longer gene of the same ZH13 locus. Opposite-strand overlaps are kept. The three records are `*.final.redundant_merged.tsv`, `*.final.extension_conflict.tsv`, and `*.final.nested_fragment.tsv`.
+`resolve_final_redundancy.py` then edits that same directory. Identical CDS and protein sequences on one strand are collapsed to the gene ID that carries the UTR transcripts. An extension that created a same-strand CDS overlap of ≥ 200 bp is restored from `12_renamed`. An unexpressed fragment is removed when its CDS and protein sit inside a longer gene of the same ZH13 locus. The three records are `*.final.redundant_merged.tsv`, `*.final.extension_conflict.tsv`, and `*.final.nested_fragment.tsv`.
+
+`antisense_qc.py` keeps an opposite-strand CDS overlap only when both genes have reliable homology (`high_confidence`, or `homolog_unexpressed`). Pairs whose ZH13 v3 homologs also overlap on opposite strands stay, as do pairs whose ZH13 homologs do not. A single-exon model without reliable homology is removed, and so is every other antisense pair outside those two groups. When both genes map to one ZH13 gene, the model with more exons stays. Removed genes are listed in `*.final.antisense_excluded.tsv` and `*.final.id_map.tsv`. Locus IDs are not renumbered.
 
 ```bash
 bash 10_final_anno.sh

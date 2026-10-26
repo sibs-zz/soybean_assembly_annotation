@@ -36,6 +36,9 @@ Directory: `<workdir>/annot/<cultivar>_annotation_downstream/13_final/`
 | `*.final.redundant_merged.tsv` | Duplicate CDS/protein gene ID removed in step 10 |
 | `*.final.extension_conflict.tsv` | Extension restored because the new CDS overlapped another extension |
 | `*.final.nested_fragment.tsv` | Same-strand fragment inside a longer gene of the same ZH13 locus |
+| `*.final.antisense_pair_qc.tsv` | Every opposite-strand CDS overlap and its evidence tier, written before exclusion |
+| `*.final.antisense_model_qc.tsv` | Single-exon antisense model lacking reliable homology |
+| `*.final.antisense_excluded.tsv` | Gene removed from the final set by the antisense filter |
 | `*.final.orf_dropped.tsv` | ORF models removed while building this set |
 | `*.final.busco.short_summary.txt` | BUSCO protein mode, longest protein per gene, embryophyta_odb10 |
 | `*.final.busco.full_table.tsv` | One row per BUSCO gene |
@@ -52,17 +55,17 @@ Functional tables from step 09 remain in `12_renamed/*.renamed.annotation.summar
 
 ## Example counts (this project, after step 10)
 
-These numbers document one run. They are not a specification. BUSCO is the longest protein of each final gene, measured before the same-strand duplicate and fragment removal. Those removed proteins are copies or pieces of proteins that remain.
+These numbers document one run. They are not a specification. BUSCO is the longest protein of each final gene, measured before the same-strand duplicate removal and before the antisense exclusion.
 
 | Cultivar | Genes | high_confidence | expressed_zh13_below_50 | homolog_unexpressed | BUSCO complete |
 |----------|------:|----------------:|------------------------:|--------------------:|----------------|
-| KD35 | 62,638 | 58,903 | 1,912 | 1,823 | C:97.2% |
-| N2L | 59,528 | 56,230 | 1,756 | 1,542 | C:96.9% |
-| BZ | 60,948 | 57,254 | 2,000 | 1,694 | C:96.8% |
-| DY11 | 59,982 | 56,380 | 1,943 | 1,659 | C:97.2% |
-| TH2 | 60,488 | 56,895 | 1,966 | 1,627 | C:97.5% |
-| TZX1998 | 60,186 | 56,740 | 1,890 | 1,556 | C:96.6% |
-| TZX253 | 62,614 | 59,058 | 1,848 | 1,708 | C:96.4% |
+| KD35 | 61,657 | 58,902 | 932 | 1,823 | C:97.2% |
+| N2L | 58,572 | 56,230 | 800 | 1,542 | C:96.9% |
+| BZ | 59,931 | 57,254 | 983 | 1,694 | C:96.8% |
+| DY11 | 58,970 | 56,380 | 931 | 1,659 | C:97.2% |
+| TH2 | 59,493 | 56,895 | 971 | 1,627 | C:97.5% |
+| TZX1998 | 59,222 | 56,739 | 927 | 1,556 | C:96.6% |
+| TZX253 | 61,642 | 59,058 | 876 | 1,708 | C:96.4% |
 
 ---
 

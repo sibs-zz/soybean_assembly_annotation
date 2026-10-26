@@ -34,7 +34,12 @@
 #     and their original CDS did not
 #   - drop an unexpressed same-strand fragment whose CDS and protein sit inside
 #     a longer gene of the same ZH13 locus
-# Opposite-strand overlaps are left in place.
+# antisense_qc.py keeps an opposite-strand CDS overlap only when both genes
+# have reliable homology. Pairs that also overlap in ZH13, and pairs that do
+# not, both stay. Single-exon models without reliable homology, and the other
+# unresolved antisense pairs, are removed from this same 13_final set and
+# recorded in PREFIX.final.antisense_excluded.tsv. The GFF is not given a
+# separate gene type for them.
 #
 # Usage:
 #   bash 10_final_anno.sh
@@ -700,6 +705,10 @@ PY
         --threads "$CURATE_THREADS"
     log "resolve redundant models in 13_final: ${prefix}"
     python3 "${SCRIPT_DIR}/resolve_final_redundancy.py" \
+        --downstream "$down" \
+        --prefix "$prefix"
+    log "write antisense QC tables in 13_final: ${prefix}"
+    python3 "${SCRIPT_DIR}/antisense_qc.py" \
         --downstream "$down" \
         --prefix "$prefix"
     if [[ "$RUN_BUSCO_FINAL" -eq 1 ]]; then
