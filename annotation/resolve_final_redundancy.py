@@ -624,7 +624,7 @@ def resolve(downstream, prefix, dry_run):
         f"本轮撤销 {len(revert)} 个基因。\n"
         "同链短 CDS 完全落在同一 ZH13 基因的长 CDS 内、短蛋白是长蛋白的连续片段、且短模型没有表达支持的基因已从本套注释排除。"
         f"本轮排除 {len(drop_fragment)} 个基因。有表达支持的同类模型保留。\n"
-        "反义链重叠和内含子嵌套未删除。外显子结构不同且有独立表达证据的同链重叠基因未合并。位点编号不重排。\n"
+        "反义链重叠留给后续筛选，这一步不删除。内含子嵌套，以及外显子结构不同且有独立表达证据的同链重叠，不在这一步删除。位点编号不重排。\n"
         "对应关系记在 final.redundant_merged.tsv、final.extension_conflict.tsv、final.nested_fragment.tsv 和 final.id_map.tsv。\n"
         f"处理后基因数 {sum(counts.values())}，其中 high_confidence {counts['high_confidence']}，"
         f"expressed_zh13_below_50 {counts['expressed_zh13_below_50']}，"

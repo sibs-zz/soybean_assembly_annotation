@@ -55,7 +55,7 @@ Functional tables from step 09 remain in `12_renamed/*.renamed.annotation.summar
 
 ## Example counts (this project, after step 10)
 
-These numbers document one run. They are not a specification. BUSCO is the longest protein of each final gene, measured before the same-strand duplicate removal and before the antisense exclusion.
+These numbers document one run. They are not a specification. BUSCO uses the longest protein of each gene in the current `13_final`, after same-strand cleanup and antisense exclusion.
 
 | Cultivar | Genes | high_confidence | expressed_zh13_below_50 | homolog_unexpressed | BUSCO complete |
 |----------|------:|----------------:|------------------------:|--------------------:|----------------|

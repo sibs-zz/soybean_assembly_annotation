@@ -711,6 +711,8 @@ PY
     python3 "${SCRIPT_DIR}/antisense_qc.py" \
         --downstream "$down" \
         --prefix "$prefix"
+    # BUSCO stays after ORF filtering, short-model repair, same-strand cleanup,
+    # and antisense exclusion. It reads the proteins left in this 13_final.
     if [[ "$RUN_BUSCO_FINAL" -eq 1 ]]; then
         run_final_busco "$down" "$prefix"
     fi
