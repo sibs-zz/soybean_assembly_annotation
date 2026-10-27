@@ -42,7 +42,7 @@ flowchart TD
     N07["07 EVM"]
     N08["08 PASA UTR 更新"]
     N09["09 功能注释 + 改名"]
-    N10["10 最终注释：修补、去冗余、反义筛选、BUSCO"]
+    N10["10 最终注释：修补、去冗余、反义筛选、短片段、BUSCO"]
   end
 
   HiFi --> A01
@@ -66,7 +66,7 @@ flowchart TD
 | `expressed_zh13_below_50` | 有表达，相对 ZH13 v3 的相似度 < 50%；不用 ZH13 全长蛋白改写 |
 | `homolog_unexpressed` | 没有表达，相对 ZH13 v3 的相似度 < 50%，并且至少一套大豆参考蛋白的最高 bitscore 命中达到相似度 ≥ 50%、双向覆盖 ≥ 50% |
 
-10 步会修补 high-confidence 短模型，去掉同链重复和碎片，反义 CDS 重叠只保留两侧都有可靠同源的基因对，最后做蛋白 BUSCO。位点编号不重排。`12_renamed/` 保留改名后的模型和删除清单。
+10 步会修补 high-confidence 短模型，去掉同链重复和碎片，反义 CDS 重叠只保留两侧都有可靠同源的基因对，去掉已有完整拷贝的无表达短片段，最后做蛋白 BUSCO。位点编号不重排。`12_renamed/` 保留改名后的模型和删除清单。
 
 ---
 
@@ -134,7 +134,7 @@ $ROOT/rna_clean/     Atlas RNA-seq 双端
 
 09 步把基因改成 ZH13 风格 ID（如 `KD35_01G000100.m1`），结果在 `12_renamed/`。这一层保留改名后的全量注释和删除清单，用来追溯，不作为投稿基因集。
 
-10 步（`10_final_anno.sh`，辅助脚本 `curate_final_models.py`、`resolve_final_redundancy.py` 和 `antisense_qc.py`）读取 `12_renamed`，在 `13_final/` 写成一套注释：
+10 步（`10_final_anno.sh`，辅助脚本 `curate_final_models.py`、`resolve_final_redundancy.py`、`antisense_qc.py` 和 `short_fragment_filter.py`）读取 `12_renamed`，在 `13_final/` 写成一套注释：
 
 1. 再查一遍 ORF。CDS 长度不能被 3 整除就删除整个基因；没有 CDS、没有 ATG、有内部终止或没有终止密码子就删除该转录本。09 步已经删除的基因不会回来。位点编号不重排。
 2. 保留三类互不重叠的核基因（Chr01–Chr20，置信度至少 medium，转座元件重叠不超过 0.5）：
@@ -144,6 +144,7 @@ $ROOT/rna_clean/     Atlas RNA-seq 双端
 3. 只修补 high-confidence 短模型。同位点 miniprot 能恢复至少 80% 的 ZH13 蛋白、没有移码和框内终止时，才提出新 CDS。新 CDS 必须有 ATG、有终止密码子、长度能被 3 整除、没有内部终止。任一条件不满足就保留原模型。同一次修订里两个新 CDS 在同链重叠达到 200 bp 时，这两个延长都不写入。`expressed_zh13_below_50` 不用 ZH13 全长蛋白改写。
 4. 仍在这一套 `13_final` 里收尾：CDS 和蛋白完全相同的重复基因号合并，保留带 UTR 转录本的基因号。同链、同一 ZH13 基因，且一个基因的每条 CDS 坐标都已经是另一个基因的转录本时，删除多余基因号，不加成异构体。延长后才发生同链 CDS 重叠的模型恢复原 CDS。没有表达、短 CDS 和短蛋白都落在同一 ZH13 基因的长模型里的同链碎片从主注释去掉。
 5. 反义 CDS 重叠只保留两侧都有可靠同源的基因对。ZH13 v3 上也有同样反义 CDS 重叠的记为较高；ZH13 没有同样重叠的记为中等至较高。缺少可靠同源的单外显子反义模型，以及其余未归入这两档的反义对，从这一套注释排除，基因号记在 `*.final.antisense_excluded.tsv`。位点编号不重排。
+6. 每个基因取最终最长蛋白，比对 ZH13 v3 和 Wm82 a6。没有表达的 `high_confidence` 基因，如果对相似度 ≥ 50 的参考蛋白覆盖都不到一半，而同一个 ZH13 基因在本基因组已有覆盖 ≥ 80% 的拷贝，就从主注释去掉。它位于该 ZH13 基因所在染色体、且比所有完整拷贝更靠近 ZH13 位置时，视为同位点模型保留。全部候选及处理结果记在 `*.final.short_fragment_qc.tsv`。
 
 **对外报基因数、投注释**用 `13_final/`：
 

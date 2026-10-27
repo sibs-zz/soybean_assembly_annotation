@@ -39,6 +39,7 @@ Directory: `<workdir>/annot/<cultivar>_annotation_downstream/13_final/`
 | `*.final.antisense_pair_qc.tsv` | Every opposite-strand CDS overlap and its evidence tier, written before exclusion |
 | `*.final.antisense_model_qc.tsv` | Single-exon antisense model lacking reliable homology |
 | `*.final.antisense_excluded.tsv` | Gene removed from the final set by the antisense filter |
+| `*.final.short_fragment_qc.tsv` | Unexpressed short `high_confidence` candidates, with action (removed, or kept as the same-locus model) |
 | `*.final.orf_dropped.tsv` | ORF models removed while building this set |
 | `*.final.busco.short_summary.txt` | BUSCO protein mode, longest protein per gene, embryophyta_odb10 |
 | `*.final.busco.full_table.tsv` | One row per BUSCO gene |
@@ -55,17 +56,17 @@ Functional tables from step 09 remain in `12_renamed/*.renamed.annotation.summar
 
 ## Example counts (this project, after step 10)
 
-These numbers document one run. They are not a specification. BUSCO uses the longest protein of each gene in the current `13_final`, after same-strand cleanup and antisense exclusion.
+These numbers document one run. They are not a specification. BUSCO uses the longest protein of each gene in the current `13_final`, after same-strand cleanup, antisense exclusion, and short-fragment exclusion.
 
 | Cultivar | Genes | high_confidence | expressed_zh13_below_50 | homolog_unexpressed | BUSCO complete |
 |----------|------:|----------------:|------------------------:|--------------------:|----------------|
-| KD35 | 61,657 | 58,902 | 932 | 1,823 | C:97.2% |
-| N2L | 58,572 | 56,230 | 800 | 1,542 | C:96.9% |
-| BZ | 59,931 | 57,254 | 983 | 1,694 | C:96.8% |
-| DY11 | 58,969 | 56,379 | 931 | 1,659 | C:97.2% |
-| TH2 | 59,493 | 56,895 | 971 | 1,627 | C:97.5% |
-| TZX1998 | 59,222 | 56,739 | 927 | 1,556 | C:96.6% |
-| TZX253 | 61,642 | 59,058 | 876 | 1,708 | C:96.4% |
+| KD35 | 55,945 | 53,190 | 932 | 1,823 | C:97.2% |
+| N2L | 53,918 | 51,576 | 800 | 1,542 | C:96.9% |
+| BZ | 54,918 | 52,241 | 983 | 1,694 | C:96.8% |
+| DY11 | 54,252 | 51,662 | 931 | 1,659 | C:97.2% |
+| TH2 | 54,833 | 52,235 | 971 | 1,627 | C:97.5% |
+| TZX1998 | 54,218 | 51,735 | 927 | 1,556 | C:96.6% |
+| TZX253 | 56,267 | 53,683 | 876 | 1,708 | C:96.4% |
 
 ---
 

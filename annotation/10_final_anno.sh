@@ -40,6 +40,12 @@
 # unresolved antisense pairs, are removed from this same 13_final set and
 # recorded in PREFIX.final.antisense_excluded.tsv. The GFF is not given a
 # separate gene type for them.
+# short_fragment_filter.py aligns the longest final protein of each gene to
+# ZH13 v3 and Wm82 a6. An unexpressed high_confidence gene that covers less than
+# half of every reference protein with identity >= 50, while the same ZH13 gene
+# has a copy covered >= 80% elsewhere in this genome, is removed. It stays when
+# it sits on the ZH13 gene's chromosome closer to the ZH13 position than every
+# full-length copy. Candidates go to PREFIX.final.short_fragment_qc.tsv.
 #
 # Usage:
 #   bash 10_final_anno.sh
@@ -711,8 +717,13 @@ PY
     python3 "${SCRIPT_DIR}/antisense_qc.py" \
         --downstream "$down" \
         --prefix "$prefix"
+    log "remove unexpressed short fragments in 13_final: ${prefix}"
+    python3 "${SCRIPT_DIR}/short_fragment_filter.py" \
+        --downstream "$down" \
+        --prefix "$prefix" \
+        --threads "$CURATE_THREADS"
     # BUSCO stays after ORF filtering, short-model repair, same-strand cleanup,
-    # and antisense exclusion. It reads the proteins left in this 13_final.
+    # antisense and short-fragment exclusion. It reads the proteins left in this 13_final.
     if [[ "$RUN_BUSCO_FINAL" -eq 1 ]]; then
         run_final_busco "$down" "$prefix"
     fi

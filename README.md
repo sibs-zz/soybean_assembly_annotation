@@ -42,7 +42,7 @@ flowchart TD
     N07["07 EVM"]
     N08["08 PASA UTR update"]
     N09["09 Functional annotation + rename"]
-    N10["10 Final set: repair, redundancy, antisense, BUSCO"]
+    N10["10 Final set: repair, redundancy, antisense, fragments, BUSCO"]
   end
 
   HiFi --> A01
@@ -66,7 +66,7 @@ flowchart TD
 | `expressed_zh13_below_50` | Expressed, ZH13 v3 identity < 50%; not rewritten from a full ZH13 protein |
 | `homolog_unexpressed` | Unexpressed, ZH13 v3 identity < 50%, plus a best soybean-proteome hit at ≥ 50% identity and ≥ 50% coverage both ways |
 
-Step 10 repairs short high-confidence models, removes same-strand duplicates and fragments, keeps an antisense CDS overlap only when both genes have reliable homology, then runs protein BUSCO. Locus IDs are not renumbered. `12_renamed/` keeps the renamed models and the drop list.
+Step 10 repairs short high-confidence models, removes same-strand duplicates and fragments, keeps an antisense CDS overlap only when both genes have reliable homology, removes unexpressed partial copies of genes that already have a full-length copy, then runs protein BUSCO. Locus IDs are not renumbered. `12_renamed/` keeps the renamed models and the drop list.
 
 ---
 
@@ -175,7 +175,7 @@ Optional preprocess helpers: `preprocess/hifi_bam2fastq.sh`, `hic_fastp.sh`, `rn
 
 Step 09 writes ZH13-style locus IDs (`KD35_01G000100.m1`) under `12_renamed/`. That folder is the traceable renamed set, including the drop list. It is not the submitted gene set.
 
-Step 10 (`10_final_anno.sh`, helpers `curate_final_models.py`, `resolve_final_redundancy.py`, and `antisense_qc.py`) reads `12_renamed` and writes one gene set to `13_final/`:
+Step 10 (`10_final_anno.sh`, helpers `curate_final_models.py`, `resolve_final_redundancy.py`, `antisense_qc.py`, and `short_fragment_filter.py`) reads `12_renamed` and writes one gene set to `13_final/`:
 
 1. Drop an abnormal ORF again. A CDS whose length is not divisible by 3 removes the whole gene. A transcript with no CDS, no ATG, an internal stop, or no terminal stop is removed. Gene IDs already on the step-09 drop list cannot return. Locus IDs are not renumbered.
 2. Keep three disjoint nuclear classes (Chr01–Chr20, confidence at least medium, TE overlap ≤ 0.5):
@@ -185,6 +185,7 @@ Step 10 (`10_final_anno.sh`, helpers `curate_final_models.py`, `resolve_final_re
 3. Revise short high-confidence models in place when a same-locus miniprot alignment recovers at least 80% of the ZH13 protein without a frameshift or in-frame stop. The new CDS must start with ATG, end with a stop, have a length divisible by 3, and contain no internal stop. A model that fails any of those checks is left unchanged. Two new same-strand CDS that overlap by at least 200 bp are both left unchanged. `expressed_zh13_below_50` is not rewritten from a ZH13 protein.
 4. On that same `13_final` directory, merge gene IDs that share one CDS and one protein, keep the ID with the UTR transcripts, and drop a same-strand gene when every CDS coordinate set is already a transcript of another gene at the same ZH13 locus. Do not add that gene as an isoform. Restore an extension whose new CDS overlaps another extension, and drop an unexpressed same-strand fragment whose protein is a continuous piece of a longer gene at the same ZH13 locus.
 5. Keep an opposite-strand CDS overlap only when both genes have reliable homology. Drop a single-exon antisense model that lacks that support, and drop the remaining antisense pairs that do not fall into the two retained groups. Removed IDs are listed in `*.final.antisense_excluded.tsv`.
+6. Align the longest final protein of each gene to ZH13 v3 and Wm82 a6. Drop an unexpressed `high_confidence` gene when no reference protein with identity ≥ 50 is covered by half or more and the same ZH13 gene already has a copy covered ≥ 80% in this genome. Keep it when it lies on the chromosome of that ZH13 gene and closer to the ZH13 position than every full-length copy. All candidates and their outcome are listed in `*.final.short_fragment_qc.tsv`.
 
 Use these `13_final` files for the gene count and for submission:
 
