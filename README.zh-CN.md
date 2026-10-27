@@ -4,7 +4,7 @@
 
 本仓库提供大豆（*Glycine max*）端粒到端粒（T2T）组装与证据驱动基因注释的可重复流程，在品种基因组（KD35、N2L 及后续材料）上用 PacBio HiFi、超长 ONT、Hi-C 以及短读 RNA-seq 跑通。
 
-仓库只包含**脚本、辅助代码、环境说明和流程文档**，不含原始测序、组装序列或注释 GFF/FASTA。数据放在独立工作目录，用 `ROOT` 指向即可。
+仓库只包含**脚本、辅助代码和环境说明**，不含原始测序、组装序列或注释 GFF/FASTA。数据放在独立工作目录，用 `ROOT` 指向即可。`docs/` 里的方法笔记留在本地，当前不放进本仓库。
 
 ---
 
@@ -79,7 +79,6 @@ soybean_assembly_annotation/
 ├── LICENSE / CITATION.cff / .gitignore
 ├── config/config.env.example      # 路径与 HC 过滤参数
 ├── env/                           # conda 环境
-├── docs/                          # 方法说明
 ├── assembly/                      # 组装 01–10（KD35、N2L）
 │   └── batch2/                    # BZ、DY11、TH2、TZX1998、TZX253 实际运行的 01–10
 ├── annotation/                    # EDTA → BRAKER → EVM → polish → 最终注释
@@ -130,8 +129,6 @@ $ROOT/rna_clean/     Atlas RNA-seq 双端
 
 注释 09 的单样本写法是 `SAMPLE=N2L_primary THREADS=16 bash 09_run_polish.sh`。10 和 11 用品种前缀：`SAMPLE=KD35 bash 10_final_anno.sh`、`SAMPLE=KD35 bash 11_final_function.sh`。10 不跑 BUSCO 时加 `RUN_BUSCO_FINAL=0`。重跑 10 之后要再跑 11。
 
-分步说明：[docs/assembly.md](docs/assembly.md)、[docs/annotation.md](docs/annotation.md)、[docs/outputs.md](docs/outputs.md)。
-
 ---
 
 ## 论文主注释用哪几个文件
@@ -165,6 +162,22 @@ $ROOT/rna_clean/     Atlas RNA-seq 双端
 `*.final.corrections.tsv` 记录每个被审查的短模型；改过的行同时保存旧蛋白和新蛋白。`*.final.id_map.tsv` 只记录发生替换的基因号或转录本号。筛选规则在 `*.final.criteria.txt`。每个基因取最长蛋白做的 BUSCO 摘要在 `*.final.busco.short_summary.txt`。
 
 重复序列仍在 `12_renamed/*.renamed.repeat.gff3.gz`。TE ID 不改成基因号。不要用 `12_renamed` 的全量 GFF 或 `11_publication/` 报基因数。
+
+### 本次 13_final 基因数
+
+蛋白 BUSCO 用 embryophyta_odb10，每个基因取最长蛋白，在 10 步筛选之后计算。
+
+| 品种 | 基因 | high_confidence | expressed_zh13_below_50 | homolog_unexpressed | BUSCO 完整 |
+|------|-----:|----------------:|------------------------:|--------------------:|------------|
+| KD35 | 55,848 | 53,093 | 932 | 1,823 | C:97.2% |
+| N2L | 53,857 | 51,515 | 800 | 1,542 | C:96.9% |
+| BZ | 54,837 | 52,160 | 983 | 1,694 | C:96.8% |
+| DY11 | 54,189 | 51,599 | 931 | 1,659 | C:97.2% |
+| TH2 | 54,751 | 52,153 | 971 | 1,627 | C:97.5% |
+| TZX1998 | 54,153 | 51,670 | 927 | 1,556 | C:96.6% |
+| TZX253 | 56,173 | 53,589 | 876 | 1,708 | C:96.4% |
+
+每套组装都是 20 条染色体，染色体上没有 N。quarTeT TeloExplorer（`-m 50`）对 40 个末端都报了端粒序列。有的末端最外 20 kb 内重复不到 50 次，有的端粒在末端内侧几十到大约 140 kb。N2L 和 DY11 的 Chr13 右端停在亚端粒，现有 ONT 读长延不出去；用同一批数据重跑也不会补上这段端粒。
 
 ---
 

@@ -4,7 +4,7 @@
 
 Reproducible telomere-to-telomere (T2T) genome assembly and evidence-based gene annotation for soybean (*Glycine max*). The pipeline was developed for cultivar genomes (KD35, N2L and additional accessions) using PacBio HiFi, ultra-long Oxford Nanopore (ONT) and Hi-C reads, plus short-read RNA-seq for annotation.
 
-This repository contains **scripts, helper code, environment notes and methods documentation**. It does **not** include raw reads, assemblies or annotation GFF/FASTA (too large for GitHub). Place those data in a separate work directory and point `ROOT` at it.
+This repository contains **scripts, helper code and environment notes**. It does **not** include raw reads, assemblies or annotation GFF/FASTA (too large for GitHub). Place those data in a separate work directory and point `ROOT` at it. Longer methods notes under `docs/` stay on disk and are not part of this repository for now.
 
 ---
 
@@ -79,7 +79,6 @@ soybean_assembly_annotation/
 ├── LICENSE / CITATION.cff / .gitignore
 ├── config/config.env.example      # paths and HC filter knobs
 ├── env/                           # conda environments
-├── docs/                          # methods notes
 ├── assembly/                      # 01–10 T2T scripts + Python helpers (KD35, N2L)
 │   └── batch2/                    # 01–10 drivers as run for BZ, DY11, TH2, TZX1998, TZX253
 ├── annotation/                    # EDTA → BRAKER → EVM → polish → final set
@@ -158,8 +157,6 @@ The second batch (BZ, DY11, TH2, TZX1998, TZX253) was assembled with `assembly/b
 
 Single-sample override: `SAMPLE=N2L_primary THREADS=16 bash 09_run_polish.sh`. Steps 10 and 11 use the cultivar prefix, not the `_primary` assembly name: `SAMPLE=KD35 bash 10_final_anno.sh`. Skip the step-10 BUSCO with `RUN_BUSCO_FINAL=0`. Rerun step 11 after any rerun of step 10.
 
-Details: [docs/assembly.md](docs/assembly.md), [docs/annotation.md](docs/annotation.md), [docs/outputs.md](docs/outputs.md).
-
 ---
 
 ## Expected inputs
@@ -207,6 +204,22 @@ Step 11 (`11_final_function.sh`, helper `final_function_table.py`) writes one fu
 `*.final.corrections.tsv` stores every reviewed short model, including the old and new protein when a model was overwritten. `*.final.id_map.tsv` stores gene or transcript IDs that changed. `*.final.criteria.txt` states the filters. BUSCO protein mode on the longest protein per gene is copied to `*.final.busco.short_summary.txt`.
 
 Repeat annotation stays in `12_renamed/*.renamed.repeat.gff3.gz`. TE IDs are not rewritten as gene loci. Do not report gene numbers from the full `12_renamed` GFF or from `11_publication/`.
+
+### Gene counts in this run
+
+Protein BUSCO is embryophyta_odb10, longest protein per gene, after the step-10 filters.
+
+| Cultivar | Genes | high_confidence | expressed_zh13_below_50 | homolog_unexpressed | BUSCO complete |
+|----------|------:|----------------:|------------------------:|--------------------:|----------------|
+| KD35 | 55,848 | 53,093 | 932 | 1,823 | C:97.2% |
+| N2L | 53,857 | 51,515 | 800 | 1,542 | C:96.9% |
+| BZ | 54,837 | 52,160 | 983 | 1,694 | C:96.8% |
+| DY11 | 54,189 | 51,599 | 931 | 1,659 | C:97.2% |
+| TH2 | 54,751 | 52,153 | 971 | 1,627 | C:97.5% |
+| TZX1998 | 54,153 | 51,670 | 927 | 1,556 | C:96.6% |
+| TZX253 | 56,173 | 53,589 | 876 | 1,708 | C:96.4% |
+
+Each assembly has 20 chromosomes and no N on those chromosomes. quarTeT TeloExplorer (`-m 50`) calls telomere sequence at all 40 ends. Some terminal tracts have fewer than 50 copies in the outer 20 kb, and some sit tens to about 140 kb inside the tip. The right end of Chr13 in N2L and DY11 stops in the subtelomere; the existing ONT reads do not extend it, and the same reads will not add that telomere on a rerun.
 
 ---
 

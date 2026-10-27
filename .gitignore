@@ -1,6 +1,9 @@
 # Local path overrides (never commit lab-specific secrets or mounts)
 config/config.env
 
+# Methods notes kept on disk; not published for now
+docs/
+
 # Python
 __pycache__/
 *.py[cod]
