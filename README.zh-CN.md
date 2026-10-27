@@ -25,7 +25,7 @@ flowchart TD
     A03["03 Juicebox 人工纠错"]
     A04["04 juicer post"]
     A05["05 LR_Gapcloser"]
-    A06["06 端粒 / gap 填补"]
+    A06["06 端粒 / gap 填补（DY11、TH2 另跑 final_fix）"]
     A07["07 Racon 抛光 + 染色体改名"]
     A08["08 Merqury / BUSCO / QUAST"]
     A09["09 Hi-C 热图"]
@@ -80,7 +80,8 @@ soybean_assembly_annotation/
 ├── config/config.env.example      # 路径与 HC 过滤参数
 ├── env/                           # conda 环境
 ├── docs/                          # 方法说明
-├── assembly/                      # 组装 01–10
+├── assembly/                      # 组装 01–10（KD35、N2L）
+│   └── batch2/                    # BZ、DY11、TH2、TZX1998、TZX253 实际运行的 01–10
 ├── annotation/                    # EDTA → BRAKER → EVM → polish → 最终注释
 └── preprocess/                    # 可选：HiFi / Hi-C / RNA 清洗
 ```
@@ -125,6 +126,8 @@ $ROOT/rna_clean/     Atlas RNA-seq 双端
 
 按编号顺序跑：先组装 01–07 得到 `*_Chr.fa`，再注释。组装 10 着丝粒需要 EDTA 的 TE GFF，应在注释 01 之后。
 
+第二批（BZ、DY11、TH2、TZX1998、TZX253）用 `assembly/batch2/` 组装，先跑 `01_prep_hifi_hic.sh`；HiFi 和 Hi-C 命名为 `<品种>_hifi.fq.gz`、`<品种>_hic_{1,2}.fq.gz`。这些脚本共用 `assembly/` 里的 Python 辅助脚本。DY11 和 TH2 在 06 之后又跑了 `assembly/06_gap_telo_final_fix.sh`。这一批的注释 01–09 用的是 `annotation/` 里的脚本，只把 `SAMPLES` 改成五个品种、`ROOT` 指向该批目录。
+
 注释 09 的单样本写法是 `SAMPLE=N2L_primary THREADS=16 bash 09_run_polish.sh`。10 和 11 用品种前缀：`SAMPLE=KD35 bash 10_final_anno.sh`、`SAMPLE=KD35 bash 11_final_function.sh`。10 不跑 BUSCO 时加 `RUN_BUSCO_FINAL=0`。重跑 10 之后要再跑 11。
 
 分步说明：[docs/assembly.md](docs/assembly.md)、[docs/annotation.md](docs/annotation.md)、[docs/outputs.md](docs/outputs.md)。
@@ -145,7 +148,7 @@ $ROOT/rna_clean/     Atlas RNA-seq 双端
 3. 只修补 high-confidence 短模型。同位点 miniprot 能恢复至少 80% 的 ZH13 蛋白、没有移码和框内终止时，才提出新 CDS。新 CDS 必须有 ATG、有终止密码子、长度能被 3 整除、没有内部终止。任一条件不满足就保留原模型。同一次修订里两个新 CDS 在同链重叠达到 200 bp 时，这两个延长都不写入。`expressed_zh13_below_50` 不用 ZH13 全长蛋白改写。
 4. 仍在这一套 `13_final` 里收尾：CDS 和蛋白完全相同的重复基因号合并，保留带 UTR 转录本的基因号。同链、同一 ZH13 基因，且一个基因的每条 CDS 坐标都已经是另一个基因的转录本时，删除多余基因号，不加成异构体。延长后才发生同链 CDS 重叠的模型恢复原 CDS。没有表达、短 CDS 和短蛋白都落在同一 ZH13 基因的长模型里的同链碎片从主注释去掉。
 5. 反义 CDS 重叠只保留两侧都有可靠同源的基因对。ZH13 v3 上也有同样反义 CDS 重叠的记为较高；ZH13 没有同样重叠的记为中等至较高。缺少可靠同源的单外显子反义模型，以及其余未归入这两档的反义对，从这一套注释排除，基因号记在 `*.final.antisense_excluded.tsv`。位点编号不重排。
-6. 每个基因取最终最长蛋白，比对 ZH13 v3 和 Wm82 a6。没有表达的 `high_confidence` 基因，如果对相似度 ≥ 50 的参考蛋白覆盖都不到一半，而同一个 ZH13 基因在本基因组已有覆盖 ≥ 80% 的拷贝，就从主注释去掉。它位于该 ZH13 基因所在染色体、且比所有完整拷贝更靠近 ZH13 位置时，视为同位点模型保留。全部候选及处理结果记在 `*.final.short_fragment_qc.tsv`。
+6. 每个基因取最终最长蛋白，比对 ZH13 v3 和 Wm82 a6。没有表达的 `high_confidence` 基因，如果对相似度 ≥ 50 的参考蛋白覆盖都不到一半，而同一个 ZH13 基因在本基因组已有覆盖 ≥ 80% 的拷贝，就从主注释去掉。候选和各完整拷贝的位置先按两侧最近的锚定基因换算到 ZH13 v3 坐标（锚定基因的 ZH13 最高命中唯一，相似度 ≥ 98，覆盖 ≥ 0.9），易位片段因此按其在 ZH13 中的位点比较。换算后位于该 ZH13 基因所在染色体、且比所有完整拷贝更靠近 ZH13 位置时，视为同位点模型保留。全部候选及处理结果记在 `*.final.short_fragment_qc.tsv`。
 
 **对外报基因数、投注释**用 `13_final/`：
 

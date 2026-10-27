@@ -4,15 +4,19 @@
 A high_confidence gene is a candidate when it has no expression support, no
 ZH13 v3 or Wm82 a6 protein with identity >= 50 is covered by half or more, and
 the same ZH13 v3 gene already has a full-length copy elsewhere in this genome.
-A candidate stays when it lies on the chromosome of that ZH13 gene and is closer
-to the ZH13 position than every full-length copy. All candidates are listed in
-PREFIX.final.short_fragment_qc.tsv; removed IDs also go to PREFIX.final.id_map.tsv.
+Positions are converted to ZH13 v3 coordinates through the nearest anchor genes
+on each side, so a segment moved by a translocation is compared at its ZH13
+locus. A candidate stays when it maps to the chromosome of that ZH13 gene and
+is closer to the ZH13 position than every full-length copy. All candidates are
+listed in PREFIX.final.short_fragment_qc.tsv; removed IDs also go to
+PREFIX.final.id_map.tsv.
 """
 
 import argparse
+import bisect
 import os
 import subprocess
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 from antisense_qc import ZH13_GFF, attr, gff_blocks, load_fasta, read_table, transcript_ids, write_table
 
@@ -50,6 +54,38 @@ def load_zh13_positions(path):
             if len(parts) >= 9 and parts[2] == "gene":
                 positions[attr(parts[8])["ID"]] = (parts[0], int(parts[3]))
     return positions
+
+
+def synteny_anchors(zh13_hits, classes, zh13_pos, min_pident, min_cov):
+    """Per chromosome, genes whose top ZH13 hit is near-identical, full length and hit by no other gene."""
+    best = {}
+    for gene_id, rows in zh13_hits.items():
+        _bits, subject, pident, scov = rows[0]
+        if gene_id in classes and pident >= min_pident and scov >= min_cov:
+            best[gene_id] = zh13_gene(subject)
+    uses = Counter(best.values())
+    anchors = defaultdict(list)
+    for gene_id, locus in best.items():
+        if uses[locus] == 1 and locus in zh13_pos:
+            anchors[classes[gene_id]["chrom"]].append((int(classes[gene_id]["start"]), *zh13_pos[locus], locus))
+    for rows in anchors.values():
+        rows.sort()
+    return anchors
+
+
+def project(anchors, chrom, pos, skip):
+    """ZH13 chromosome and position of one point, ignoring the anchor of locus `skip`."""
+    rows = anchors.get(chrom, [])
+    i = bisect.bisect_left(rows, (pos,))
+    left = next((rows[j] for j in range(i - 1, -1, -1) if rows[j][3] != skip), None)
+    right = next((rows[j] for j in range(i, len(rows)) if rows[j][3] != skip), None)
+    if left and right and left[1] == right[1] and right[0] > left[0]:
+        return left[1], round(left[2] + (pos - left[0]) / (right[0] - left[0]) * (right[2] - left[2]))
+    flank = [row for row in (left, right) if row]
+    if not flank:
+        return None
+    near = min(flank, key=lambda row: abs(row[0] - pos))
+    return near[1], near[2]
 
 
 def write_longest(final, prefix, dest):
@@ -234,12 +270,15 @@ def run_sample(downstream, prefix, args):
 
     zh13_pos = load_zh13_positions(args.zh13_gff)
     classes = read_table(os.path.join(final, f"{prefix}.final.gene_class.tsv"))
+    anchors = synteny_anchors(hits["ZH13v3"], classes, zh13_pos, args.anchor_pident, args.anchor_cov)
 
-    def distance(gene_id, zh13_chrom, zh13_start):
-        row = classes[gene_id]
-        if row["chrom"] != zh13_chrom:
+    def mapped(gene_id, locus):
+        return project(anchors, classes[gene_id]["chrom"], int(classes[gene_id]["start"]), locus)
+
+    def distance(point, zh13_chrom, zh13_start):
+        if point is None or point[0] != zh13_chrom:
             return None
-        return abs(int(row["start"]) - zh13_start)
+        return abs(point[1] - zh13_start)
 
     summary = read_table(os.path.join(downstream, "12_renamed", f"{prefix}.renamed.annotation.summary.tsv"))
     repair = read_table(os.path.join(final, f"{prefix}.final.corrections.tsv"))
@@ -280,18 +319,20 @@ def run_sample(downstream, prefix, args):
         if not copies:
             continue
         zh13_chrom, zh13_start = zh13_pos[locus]
-        own = distance(gene_id, zh13_chrom, zh13_start)
-        near = [
-            (distance(copy, zh13_chrom, zh13_start), copy) for copy in copies
-            if distance(copy, zh13_chrom, zh13_start) is not None
-        ]
+        point = mapped(gene_id, locus)
+        own = distance(point, zh13_chrom, zh13_start)
+        near = []
+        for copy in copies:
+            copy_distance = distance(mapped(copy, locus), zh13_chrom, zh13_start)
+            if copy_distance is not None:
+                near.append((copy_distance, copy))
         nearest = min(near) if near else None
         if nearest is not None:
             kept_gene = nearest[1]
         else:
             kept_gene = max(copies, key=lambda copy: (copies[copy], copy))
         if own is not None and (nearest is None or own < nearest[0]):
-            action, reason = "保留", "同位点短模型：位于ZH13基因所在染色体且比所有完整拷贝更靠近ZH13位置"
+            action, reason = "保留", "同位点短模型：换算到ZH13坐标后位于该基因所在染色体，且比所有完整拷贝更靠近ZH13位置"
         else:
             action, reason = "排除", "已有完整拷贝的短片段"
             removed[gene_id] = kept_gene
@@ -308,6 +349,7 @@ def run_sample(downstream, prefix, args):
             "cds_exons": exons.get(gene_id, 0),
             "zh13_gene": locus,
             "zh13_position": f"{zh13_chrom}:{zh13_start}",
+            "mapped_zh13_position": "NA" if point is None else f"{point[0]}:{point[1]}",
             "distance_to_zh13": "NA" if own is None else own,
             "full_copy_distance_to_zh13": "NA" if nearest is None else nearest[0],
             "zh13_top_hit": top[0][1],
@@ -324,7 +366,7 @@ def run_sample(downstream, prefix, args):
         })
     header = [
         "gene_id", "action", "reason", "full_copy_gene", "chrom", "start", "end", "strand",
-        "protein_aa", "cds_exons", "zh13_gene", "zh13_position", "distance_to_zh13",
+        "protein_aa", "cds_exons", "zh13_gene", "zh13_position", "mapped_zh13_position", "distance_to_zh13",
         "full_copy_distance_to_zh13", "zh13_top_hit", "zh13_top_pident", "zh13_top_scov",
         "best_ref", "best_ref_hit", "best_ref_pident", "best_ref_scov", "full_copy_scov",
         "max_tpm", "short_model_repair", "kept_antisense_partner",
@@ -344,7 +386,10 @@ def run_sample(downstream, prefix, args):
         f"候选同时满足：high_confidence；没有表达支持；最终最长蛋白与 ZH13 v3、Wm82 a6 中相似度 >= {args.min_pident:g} 的蛋白比对时，"
         f"同一参考蛋白上合并后的覆盖都低于 {args.max_cov:g}；"
         f"最高 bitscore 命中的 ZH13 v3 基因在本基因组已有覆盖 >= {args.full_cov:g} 的完整拷贝。\n"
-        "候选位于该 ZH13 基因所在染色体，且比所有完整拷贝更靠近 ZH13 基因位置时，视为同位点模型保留；其余候选作为已有完整拷贝的基因片段或假基因排除。"
+        "候选和完整拷贝的位置先按两侧最近的锚定基因换算到 ZH13 v3 坐标（锚定基因的最高命中相似度 >= "
+        f"{args.anchor_pident:g}、参考蛋白覆盖 >= {args.anchor_cov:g}，且该 ZH13 基因只被它一个命中），"
+        "易位片段因此按其在 ZH13 中的位点比较。"
+        "候选换算后落在该 ZH13 基因所在染色体，且比所有完整拷贝更靠近 ZH13 基因位置时，视为同位点模型保留；其余候选作为已有完整拷贝的基因片段或假基因排除。"
         "ZH13 基因在本基因组只有短拷贝的模型不是候选，保留。\n"
         f"比对文件在 05_diamond/{prefix}.final_longest.vs_*.tsv。全部候选及处理结果在 final.short_fragment_qc.tsv，排除的基因同时记在 final.id_map.tsv。\n"
         f"候选 {len(candidates)} 个，同位点保留 {n_kept} 个。\n"
@@ -376,6 +421,8 @@ def main():
     parser.add_argument("--min-pident", type=float, default=50)
     parser.add_argument("--max-cov", type=float, default=0.5)
     parser.add_argument("--full-cov", type=float, default=0.8)
+    parser.add_argument("--anchor-pident", type=float, default=98)
+    parser.add_argument("--anchor-cov", type=float, default=0.9)
     args = parser.parse_args()
     if args.all:
         root = "/tiandata2/zzh/sjy_assembly"

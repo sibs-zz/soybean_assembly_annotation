@@ -25,7 +25,7 @@ flowchart TD
     A03["03 Juicebox JBAT curation"]
     A04["04 juicer post"]
     A05["05 LR_Gapcloser"]
-    A06["06 Telomere / gap fill"]
+    A06["06 Telomere / gap fill (+ final_fix for DY11, TH2)"]
     A07["07 Racon polish + Chr rename"]
     A08["08 Merqury / BUSCO / QUAST"]
     A09["09 Hi-C heatmap"]
@@ -80,7 +80,8 @@ soybean_assembly_annotation/
 ├── config/config.env.example      # paths and HC filter knobs
 ├── env/                           # conda environments
 ├── docs/                          # methods notes
-├── assembly/                      # 01–10 T2T scripts + Python helpers
+├── assembly/                      # 01–10 T2T scripts + Python helpers (KD35, N2L)
+│   └── batch2/                    # 01–10 drivers as run for BZ, DY11, TH2, TZX1998, TZX253
 ├── annotation/                    # EDTA → BRAKER → EVM → polish → final set
 └── preprocess/                    # optional HiFi / Hi-C / RNA cleaning
 ```
@@ -153,6 +154,8 @@ bash 10_final_anno.sh
 bash 11_final_function.sh
 ```
 
+The second batch (BZ, DY11, TH2, TZX1998, TZX253) was assembled with `assembly/batch2/` (`01_prep_hifi_hic.sh` first; HiFi and Hi-C named `<cultivar>_hifi.fq.gz` and `<cultivar>_hic_{1,2}.fq.gz`). These drivers share the Python helpers in `assembly/`. DY11 and TH2 also ran `assembly/06_gap_telo_final_fix.sh` after step 06. Annotation 01–09 for that batch used the scripts in `annotation/` with the five cultivars in `SAMPLES` and `ROOT` set to the batch directory.
+
 Single-sample override: `SAMPLE=N2L_primary THREADS=16 bash 09_run_polish.sh`. Steps 10 and 11 use the cultivar prefix, not the `_primary` assembly name: `SAMPLE=KD35 bash 10_final_anno.sh`. Skip the step-10 BUSCO with `RUN_BUSCO_FINAL=0`. Rerun step 11 after any rerun of step 10.
 
 Details: [docs/assembly.md](docs/assembly.md), [docs/annotation.md](docs/annotation.md), [docs/outputs.md](docs/outputs.md).
@@ -187,7 +190,7 @@ Step 10 (`10_final_anno.sh`, helpers `curate_final_models.py`, `resolve_final_re
 3. Revise short high-confidence models in place when a same-locus miniprot alignment recovers at least 80% of the ZH13 protein without a frameshift or in-frame stop. The new CDS must start with ATG, end with a stop, have a length divisible by 3, and contain no internal stop. A model that fails any of those checks is left unchanged. Two new same-strand CDS that overlap by at least 200 bp are both left unchanged. `expressed_zh13_below_50` is not rewritten from a ZH13 protein.
 4. On that same `13_final` directory, merge gene IDs that share one CDS and one protein, keep the ID with the UTR transcripts, and drop a same-strand gene when every CDS coordinate set is already a transcript of another gene at the same ZH13 locus. Do not add that gene as an isoform. Restore an extension whose new CDS overlaps another extension, and drop an unexpressed same-strand fragment whose protein is a continuous piece of a longer gene at the same ZH13 locus.
 5. Keep an opposite-strand CDS overlap only when both genes have reliable homology. Drop a single-exon antisense model that lacks that support, and drop the remaining antisense pairs that do not fall into the two retained groups. Removed IDs are listed in `*.final.antisense_excluded.tsv`.
-6. Align the longest final protein of each gene to ZH13 v3 and Wm82 a6. Drop an unexpressed `high_confidence` gene when no reference protein with identity ≥ 50 is covered by half or more and the same ZH13 gene already has a copy covered ≥ 80% in this genome. Keep it when it lies on the chromosome of that ZH13 gene and closer to the ZH13 position than every full-length copy. All candidates and their outcome are listed in `*.final.short_fragment_qc.tsv`.
+6. Align the longest final protein of each gene to ZH13 v3 and Wm82 a6. Drop an unexpressed `high_confidence` gene when no reference protein with identity ≥ 50 is covered by half or more and the same ZH13 gene already has a copy covered ≥ 80% in this genome. Positions of the candidate and of each full-length copy are converted to ZH13 v3 coordinates through the nearest anchor genes on each side (unique top ZH13 hit, identity ≥ 98, coverage ≥ 0.9), so a translocated segment is compared at its ZH13 locus. Keep the candidate when it maps to the chromosome of that ZH13 gene and closer to the ZH13 position than every full-length copy. All candidates and their outcome are listed in `*.final.short_fragment_qc.tsv`.
 
 Use these `13_final` files for the gene count and for submission:
 

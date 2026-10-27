@@ -43,9 +43,12 @@
 # short_fragment_filter.py aligns the longest final protein of each gene to
 # ZH13 v3 and Wm82 a6. An unexpressed high_confidence gene that covers less than
 # half of every reference protein with identity >= 50, while the same ZH13 gene
-# has a copy covered >= 80% elsewhere in this genome, is removed. It stays when
-# it sits on the ZH13 gene's chromosome closer to the ZH13 position than every
-# full-length copy. Candidates go to PREFIX.final.short_fragment_qc.tsv.
+# has a copy covered >= 80% elsewhere in this genome, is removed. Positions are
+# converted to ZH13 v3 coordinates through the nearest anchor genes on each side
+# (unique top hit, identity >= 98, coverage >= 0.9), so translocated segments are
+# compared at their ZH13 locus. It stays when it maps to the ZH13 gene's
+# chromosome closer to the ZH13 position than every full-length copy.
+# Candidates go to PREFIX.final.short_fragment_qc.tsv.
 #
 # Usage:
 #   bash 10_final_anno.sh
