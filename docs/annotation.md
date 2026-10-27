@@ -19,6 +19,7 @@ Annotation is evidence-based (no Iso-Seq in the default KD35/N2L run). Protein h
 | 08 | `08_run_pasa_update.sh` | PASA annot compare `-A -L --annots evm.gff3` (UTRs) |
 | 09 | `09_run_polish.sh` | Sequences, homologs, eggNOG, InterPro, TE overlap, Salmon, confidence labels, ZH13-style rename, drop list |
 | 10 | `10_final_anno.sh` | From `12_renamed`: ORF drop, three-class final set, short-model repair, same-strand cleanup, antisense filter, short-fragment filter, BUSCO |
+| 11 | `11_final_function.sh` | Functional table for the `13_final` genes; re-annotates proteins changed in step 10 |
 
 Shared settings: `annot_common.sh` (sourced by 04–08). Python helpers live in the same folder as the shell scripts.
 
@@ -68,6 +69,17 @@ RUN_BUSCO_FINAL=0 bash 10_final_anno.sh
 ```
 
 `SAMPLE` here is `KD35`, not `KD35_primary`. BUSCO uses the longest protein of each final gene (`embryophyta_odb10`, protein mode) and copies the summary into `13_final/`.
+
+## Functional table (step 11)
+
+`11_final_function.sh` calls `final_function_table.py` for each `13_final` set. It does not change the GFF or FASTA. A final transcript whose protein is identical to a step-09 protein reuses that protein's eggNOG, InterProScan, SwissProt, ZH13 v3 and Wm82 a6 results. A protein changed in step 10 (extension, merge) is annotated again with the same eggNOG-mapper, InterProScan, SwissProt and reference DIAMOND settings as step 09. Those results are written to `05_diamond/PREFIX.final_novel.*`, `06_eggnog/PREFIX_final_novel.*` and `07_interpro/PREFIX.final_novel.interproscan.*`, and are reused when the novel FASTA is unchanged.
+
+Per gene, eggNOG, SwissProt and reference hits come from the longest protein that has a result; InterPro IDs and GO terms are the union over transcripts. `product` is the eggNOG description, then the SwissProt description, then `hypothetical protein`. TE overlap is recomputed with the step-09 method for genes whose coordinates changed. `max_TPM` and `expression_supported` stay the step-09 quantification of the gene ID. Rerun step 11 after any rerun of step 10.
+
+```bash
+bash 11_final_function.sh
+SAMPLE=KD35 bash 11_final_function.sh
+```
 
 ## EVM weights
 

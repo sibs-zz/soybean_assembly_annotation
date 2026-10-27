@@ -43,6 +43,7 @@ flowchart TD
     N08["08 PASA UTR 更新"]
     N09["09 功能注释 + 改名"]
     N10["10 最终注释：修补、去冗余、反义筛选、短片段、BUSCO"]
+    N11["11 最终基因功能注释表"]
   end
 
   HiFi --> A01
@@ -54,7 +55,7 @@ flowchart TD
   N01 --> A10
   A07 --> N01 --> N02 --> N03
   RNA --> N02
-  N02 --> N04 --> N05 --> N06 --> N07 --> N08 --> N09 --> N10
+  N02 --> N04 --> N05 --> N06 --> N07 --> N08 --> N09 --> N10 --> N11
   N03 --> N07
 ```
 
@@ -66,7 +67,7 @@ flowchart TD
 | `expressed_zh13_below_50` | 有表达，相对 ZH13 v3 的相似度 < 50%；不用 ZH13 全长蛋白改写 |
 | `homolog_unexpressed` | 没有表达，相对 ZH13 v3 的相似度 < 50%，并且至少一套大豆参考蛋白的最高 bitscore 命中达到相似度 ≥ 50%、双向覆盖 ≥ 50% |
 
-10 步会修补 high-confidence 短模型，去掉同链重复和碎片，反义 CDS 重叠只保留两侧都有可靠同源的基因对，去掉已有完整拷贝的无表达短片段，最后做蛋白 BUSCO。位点编号不重排。`12_renamed/` 保留改名后的模型和删除清单。
+10 步会修补 high-confidence 短模型，去掉同链重复和碎片，反义 CDS 重叠只保留两侧都有可靠同源的基因对，去掉已有完整拷贝的无表达短片段，最后做蛋白 BUSCO。位点编号不重排。11 步为这一套最终注释写功能注释表。`12_renamed/` 保留改名后的模型和删除清单。
 
 ---
 
@@ -124,7 +125,7 @@ $ROOT/rna_clean/     Atlas RNA-seq 双端
 
 按编号顺序跑：先组装 01–07 得到 `*_Chr.fa`，再注释。组装 10 着丝粒需要 EDTA 的 TE GFF，应在注释 01 之后。
 
-注释 09 的单样本写法是 `SAMPLE=N2L_primary THREADS=16 bash 09_run_polish.sh`。10 用品种前缀：`SAMPLE=KD35 bash 10_final_anno.sh`。不跑 BUSCO 时加 `RUN_BUSCO_FINAL=0`。
+注释 09 的单样本写法是 `SAMPLE=N2L_primary THREADS=16 bash 09_run_polish.sh`。10 和 11 用品种前缀：`SAMPLE=KD35 bash 10_final_anno.sh`、`SAMPLE=KD35 bash 11_final_function.sh`。10 不跑 BUSCO 时加 `RUN_BUSCO_FINAL=0`。重跑 10 之后要再跑 11。
 
 分步说明：[docs/assembly.md](docs/assembly.md)、[docs/annotation.md](docs/annotation.md)、[docs/outputs.md](docs/outputs.md)。
 
@@ -154,6 +155,9 @@ $ROOT/rna_clean/     Atlas RNA-seq 双端
 - `*.final.proteins.fa`
 - `*.final.genes.list`
 - `*.final.gene_class.tsv`
+- `*.final.functional_annotation.tsv`（11 步）
+
+11 步（`11_final_function.sh`，辅助脚本 `final_function_table.py`）为 `13_final` 的每个基因写一行功能注释，删除和合并掉的基因号不出现。蛋白与 09 步某条蛋白完全相同的转录本，沿用那条蛋白的 eggNOG、InterProScan、SwissProt、ZH13 v3 和 Wm82 a6 结果；10 步延长或合并后的新蛋白用同样的工具和数据库重新注释。坐标改变的基因重新计算 TE 重叠。投稿用这张表，不用 `12_renamed/*.renamed.gene_functional_annotation.tsv`。
 
 `*.final.corrections.tsv` 记录每个被审查的短模型；改过的行同时保存旧蛋白和新蛋白。`*.final.id_map.tsv` 只记录发生替换的基因号或转录本号。筛选规则在 `*.final.criteria.txt`。每个基因取最长蛋白做的 BUSCO 摘要在 `*.final.busco.short_summary.txt`。
 

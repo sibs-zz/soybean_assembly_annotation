@@ -43,6 +43,7 @@ flowchart TD
     N08["08 PASA UTR update"]
     N09["09 Functional annotation + rename"]
     N10["10 Final set: repair, redundancy, antisense, fragments, BUSCO"]
+    N11["11 Functional table for the final set"]
   end
 
   HiFi --> A01
@@ -54,7 +55,7 @@ flowchart TD
   N01 --> A10
   A07 --> N01 --> N02 --> N03
   RNA --> N02
-  N02 --> N04 --> N05 --> N06 --> N07 --> N08 --> N09 --> N10
+  N02 --> N04 --> N05 --> N06 --> N07 --> N08 --> N09 --> N10 --> N11
   N03 --> N07
 ```
 
@@ -66,7 +67,7 @@ flowchart TD
 | `expressed_zh13_below_50` | Expressed, ZH13 v3 identity < 50%; not rewritten from a full ZH13 protein |
 | `homolog_unexpressed` | Unexpressed, ZH13 v3 identity < 50%, plus a best soybean-proteome hit at ≥ 50% identity and ≥ 50% coverage both ways |
 
-Step 10 repairs short high-confidence models, removes same-strand duplicates and fragments, keeps an antisense CDS overlap only when both genes have reliable homology, removes unexpressed partial copies of genes that already have a full-length copy, then runs protein BUSCO. Locus IDs are not renumbered. `12_renamed/` keeps the renamed models and the drop list.
+Step 10 repairs short high-confidence models, removes same-strand duplicates and fragments, keeps an antisense CDS overlap only when both genes have reliable homology, removes unexpressed partial copies of genes that already have a full-length copy, then runs protein BUSCO. Locus IDs are not renumbered. Step 11 writes the gene functional table for that final set. `12_renamed/` keeps the renamed models and the drop list.
 
 ---
 
@@ -149,9 +150,10 @@ SAMPLE=KD35_primary THREADS=16 bash 07_run_evm.sh
 SAMPLE=KD35_primary THREADS=16 bash 08_run_pasa_update.sh
 SAMPLE=KD35_primary THREADS=16 bash 09_run_polish.sh
 bash 10_final_anno.sh
+bash 11_final_function.sh
 ```
 
-Single-sample override: `SAMPLE=N2L_primary THREADS=16 bash 09_run_polish.sh`. Step 10 uses the cultivar prefix, not the `_primary` assembly name: `SAMPLE=KD35 bash 10_final_anno.sh`. Skip its BUSCO with `RUN_BUSCO_FINAL=0`.
+Single-sample override: `SAMPLE=N2L_primary THREADS=16 bash 09_run_polish.sh`. Steps 10 and 11 use the cultivar prefix, not the `_primary` assembly name: `SAMPLE=KD35 bash 10_final_anno.sh`. Skip the step-10 BUSCO with `RUN_BUSCO_FINAL=0`. Rerun step 11 after any rerun of step 10.
 
 Details: [docs/assembly.md](docs/assembly.md), [docs/annotation.md](docs/annotation.md), [docs/outputs.md](docs/outputs.md).
 
@@ -195,6 +197,9 @@ Use these `13_final` files for the gene count and for submission:
 - `*.final.proteins.fa`
 - `*.final.genes.list`
 - `*.final.gene_class.tsv`
+- `*.final.functional_annotation.tsv` (step 11)
+
+Step 11 (`11_final_function.sh`, helper `final_function_table.py`) writes one functional row per `13_final` gene. Removed and merged gene IDs do not appear. A transcript whose protein is identical to a step-09 protein reuses that protein's eggNOG, InterProScan, SwissProt, ZH13 v3 and Wm82 a6 results. A protein changed by extension or merge in step 10 is annotated again with the same tools and databases. TE overlap is recomputed for genes whose coordinates changed. Use this table instead of `12_renamed/*.renamed.gene_functional_annotation.tsv`.
 
 `*.final.corrections.tsv` stores every reviewed short model, including the old and new protein when a model was overwritten. `*.final.id_map.tsv` stores gene or transcript IDs that changed. `*.final.criteria.txt` states the filters. BUSCO protein mode on the longest protein per gene is copied to `*.final.busco.short_summary.txt`.
 

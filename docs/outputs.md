@@ -39,6 +39,7 @@ Directory: `<workdir>/annot/<cultivar>_annotation_downstream/13_final/`
 | `*.final.antisense_pair_qc.tsv` | Every opposite-strand CDS overlap and its evidence tier, written before exclusion |
 | `*.final.antisense_model_qc.tsv` | Single-exon antisense model lacking reliable homology |
 | `*.final.antisense_excluded.tsv` | Gene removed from the final set by the antisense filter |
+| `*.final.functional_annotation.tsv` | Step 11: one functional row per final gene (name, product, GO, KEGG, InterPro, SwissProt, ZH13 v3 / Wm82 a6 hits, TE, expression) |
 | `*.final.short_fragment_qc.tsv` | Unexpressed short `high_confidence` candidates, with action (removed, or kept as the same-locus model) |
 | `*.final.orf_dropped.tsv` | ORF models removed while building this set |
 | `*.final.busco.short_summary.txt` | BUSCO protein mode, longest protein per gene, embryophyta_odb10 |
@@ -52,7 +53,7 @@ Do **not** report gene counts from:
 - `12_renamed/*.renamed.high_confidence.*` (step-09 subset, before the step-10 merge and repair)
 - `11_publication/` if it still uses an older filter
 
-Functional tables from step 09 remain in `12_renamed/*.renamed.annotation.summary.tsv` and `*.gene_id_mapping.tsv`. They describe the renamed models, not the coordinates changed in step 10.
+Functional tables from step 09 remain in `12_renamed/*.renamed.annotation.summary.tsv` and `*.gene_id_mapping.tsv`. They describe the renamed models, not the coordinates changed in step 10. Use `13_final/*.final.functional_annotation.tsv` from step 11 for the final genes.
 
 ## Example counts (this project, after step 10)
 
@@ -72,4 +73,4 @@ These numbers document one run. They are not a specification. BUSCO uses the lon
 
 ## 发表用文件（中文）
 
-基因组用 07 的 `*_Chr.fa`。基因数和投稿注释用 `13_final` 的一套 GFF 与 FASTA。`12_renamed` 是改名和删除记录，其中的 high-confidence 子集是 10 步之前的中间结果。功能表仍在 `12_renamed/*.renamed.annotation.summary.tsv`。
+基因组用 07 的 `*_Chr.fa`。基因数和投稿注释用 `13_final` 的一套 GFF 与 FASTA。`12_renamed` 是改名和删除记录，其中的 high-confidence 子集是 10 步之前的中间结果。最终基因的功能表用 11 步写入的 `13_final/*.final.functional_annotation.tsv`；`12_renamed` 里的功能表对应 10 步之前的模型。
